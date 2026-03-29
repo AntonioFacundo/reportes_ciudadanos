@@ -1,0 +1,19 @@
+<div class="max-w-2xl">
+  <h1 class="text-2xl font-bold text-slate-800 mb-6">Notificaciones</h1>
+
+  <div class="space-y-2">
+    <div id="notifications_list">
+      <%= render @notifications %>
+    </div>
+    <% if @has_more %>
+      <turbo-frame id="notifications_page_<%= @page + 1 %>" src="<%= notifications_path(page: @page + 1) %>" loading="lazy">
+        <div class="py-4 text-center">
+          <span class="text-sm text-slate-500">Cargando más...</span>
+        </div>
+      </turbo-frame>
+    <% end %>
+    <% if @notifications.empty? && @page == 1 %>
+      <p id="notifications_empty" class="text-slate-500 py-8">No tienes notificaciones.</p>
+    <% end %>
+  </div>
+</div>

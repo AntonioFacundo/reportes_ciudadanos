@@ -1,0 +1,10 @@
+<turbo-frame id="notifications_page_<%= @page %>">
+  <%= render @notifications %>
+  <% if @has_more %>
+    <turbo-frame id="notifications_page_<%= @page + 1 %>" src="<%= notifications_path(page: @page + 1) %>" loading="lazy">
+      <div class="py-4 text-center">
+        <span class="text-sm text-slate-500">Cargando más...</span>
+      </div>
+    </turbo-frame>
+  <% end %>
+</turbo-frame>

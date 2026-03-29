@@ -1,0 +1,55 @@
+# Run from rage_corp: docker compose -f rage_reports/docker-compose.yml --project-directory rage_reports up -d
+# Or from rage_reports: docker compose up -d
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: rage_reports
+      POSTGRES_PASSWORD: rage_reports_dev
+    ports:
+      - "5434:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rage_reports"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: >
+      bash -c "bundle install &&
+               bin/rails db:prepare &&
+               bin/rails tailwindcss:build &&
+               bin/rails server -b 0.0.0.0 -p 3000"
+    volumes:
+      - .:/rails
+      - bundle:/usr/local/bundle
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://rage_reports:rage_reports_dev@db:5432/rage_reports_development
+      REDIS_URL: redis://redis:6379/0
+      RAILS_ENV: development
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  db_data:
+  bundle:

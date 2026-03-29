@@ -1,0 +1,14 @@
+# Reportes Ciudadanos — Architecture rules
+
+All code (comments, strings, logs) MUST be in **English**. User-visible content uses i18n (config/locales/es.yml).
+
+## Rage for business logic
+
+Use the **Rage** gem for all business logic:
+- **Use cases** in app/use_cases/
+- **Deps** in app/deps/ — injectable dependencies
+- Controllers MUST only invoke use cases via `run :symbol, params, success: ..., failure: ...`
+
+## Database
+
+PostgreSQL with PostGIS. Use Docker: `docker compose up -d` from rage_reports.

@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  name: Baches
+  sla_hours: 72
+  alcaldia: one
+
+two:
+  name: Alumbrado
+  sla_hours: 48
+  alcaldia: one

@@ -1,0 +1,7 @@
+<span id="notifications_badge">
+  <% if count && count > 0 %>
+    <span class="absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-2 text-sm font-semibold text-white">
+      <%= count > 99 ? "99+" : count %>
+    </span>
+  <% end %>
+</span>

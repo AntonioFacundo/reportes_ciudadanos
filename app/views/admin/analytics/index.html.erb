@@ -1,0 +1,652 @@
+<div class="space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-800">Analíticas</h1>
+    <p class="mt-1 text-sm text-slate-500">Métricas detalladas de rendimiento, tendencias y satisfacción.</p>
+  </div>
+
+  <div class="p-4 bg-white rounded-xl border border-slate-200">
+    <%= form_tag admin_analytics_path, method: :get, class: "flex flex-wrap items-end gap-3", data: { alcaldias_by_state: "", selected_alcaldia_id: params[:alcaldia_id] } do %>
+      <%= hidden_field_tag :tab, @tab %>
+      <% if Current.user&.system_admin? %>
+        <div class="flex-1 min-w-[180px]">
+          <label class="block text-xs font-medium text-slate-500 mb-1">Estado</label>
+          <select name="state_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="">Todos</option>
+            <% (@states || []).each do |s| %>
+              <option value="<%= s.id %>" <%= "selected" if params[:state_id].to_s == s.id.to_s %>><%= s.name %></option>
+            <% end %>
+          </select>
+        </div>
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-xs font-medium text-slate-500 mb-1">Alcaldía</label>
+          <select name="alcaldia_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="" disabled selected>Selecciona un estado primero</option>
+          </select>
+        </div>
+      <% end %>
+      <div class="flex items-center gap-2 shrink-0">
+        <label class="text-xs font-medium text-slate-500 whitespace-nowrap">Fechas:</label>
+        <input type="date" name="date_from" value="<%= params[:date_from] %>" class="date-compact border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500" title="Desde" />
+        <span class="text-slate-400 text-xs">–</span>
+        <input type="date" name="date_to" value="<%= params[:date_to] %>" class="date-compact border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500" title="Hasta" />
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700">Filtrar</button>
+        <% if params[:state_id].present? || params[:alcaldia_id].present? || params[:date_from].present? || params[:date_to].present? %>
+          <%= link_to "Limpiar", admin_analytics_path(tab: @tab), class: "px-4 py-2 bg-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-300" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="mt-3 flex flex-wrap gap-2">
+    <% export_params = { date_from: params[:date_from], date_to: params[:date_to], state_id: params[:state_id], alcaldia_id: params[:alcaldia_id] }.compact %>
+    <%= link_to "Exportar analíticas PDF", admin_export_analytics_pdf_path(export_params), class: "inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white no-underline", style: "background-color: #334155;", data: { turbo: false } %>
+    <%= link_to "Reporte ejecutivo (PDF)", admin_export_ejecutivo_pdf_path(export_params), class: "inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white no-underline", style: "background-color: #0f766e;", data: { turbo: false } %>
+    <%= link_to "Rendición de cuentas (PDF)", admin_export_rendicion_cuentas_pdf_path(export_params), class: "inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white no-underline", style: "background-color: #b45309;", data: { turbo: false } %>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex flex-wrap gap-2">
+    <% tab_params = { state_id: params[:state_id].presence, alcaldia_id: params[:alcaldia_id].presence, date_from: params[:date_from].presence, date_to: params[:date_to].presence }.compact %>
+    <% %w[team trends sla satisfaction zonas].each do |t| %>
+      <% label = { "team" => "Equipo", "trends" => "Tendencias", "sla" => "SLA", "satisfaction" => "Satisfacción", "zonas" => "Por zona" }[t] %>
+      <%= link_to label, admin_analytics_path(tab_params.merge(tab: t)),
+          class: "px-4 py-2 rounded-lg text-sm font-medium #{@tab == t ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}" %>
+    <% end %>
+  </div>
+
+  <!-- ═══ TEAM TAB ═══ -->
+  <% if @tab == "team" %>
+
+    <!-- Resolution rate by month -->
+    <div class="rounded-xl border border-slate-200 bg-white">
+      <div class="border-b border-slate-100 px-5 py-4">
+        <h2 class="text-lg font-semibold text-slate-800">Tasa de resolución mensual</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">Mes</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Creados</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Resueltos</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Tasa</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            <% @resolution_rate.each do |row| %>
+              <tr class="hover:bg-slate-50">
+                <td class="px-4 py-3 text-sm font-medium text-slate-800"><%= row[:month] %></td>
+                <td class="px-4 py-3 text-sm text-slate-600 text-right"><%= row[:created] %></td>
+                <td class="px-4 py-3 text-sm text-teal-600 text-right"><%= row[:resolved] %></td>
+                <td class="px-4 py-3 text-right">
+                  <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold <%= row[:rate] >= 80 ? 'bg-teal-50 text-teal-700' : row[:rate] >= 50 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700' %>">
+                    <%= row[:rate] %>%
+                  </span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Año contra año -->
+    <% if @year_over_year %>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="text-lg font-semibold text-slate-800 mb-4">Comparativa año contra año</h2>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="rounded-lg bg-slate-50 p-4">
+            <p class="text-xs font-medium text-slate-500 uppercase"><%= @year_over_year[:period_label]&.split(" vs ")&.first || "Período actual" %></p>
+            <p class="mt-1 text-sm">Creados: <strong><%= @year_over_year.dig(:this_year, :created) %></strong> | Resueltos: <strong><%= @year_over_year.dig(:this_year, :resolved) %></strong> | Tasa: <strong><%= @year_over_year.dig(:this_year, :rate) %>%</strong></p>
+          </div>
+          <div class="rounded-lg bg-slate-50 p-4">
+            <p class="text-xs font-medium text-slate-500 uppercase"><%= @year_over_year[:period_label]&.split(" vs ")&.last || "Año anterior" %></p>
+            <p class="mt-1 text-sm">Creados: <strong><%= @year_over_year.dig(:prev_year, :created) %></strong> | Resueltos: <strong><%= @year_over_year.dig(:prev_year, :resolved) %></strong> | Tasa: <strong><%= @year_over_year.dig(:prev_year, :rate) %>%</strong></p>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Stage times -->
+    <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 class="text-lg font-semibold text-slate-800 mb-4">Tiempo promedio por etapa</h2>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-lg bg-slate-50 p-4 text-center">
+          <p class="text-xs font-medium text-slate-500 uppercase">Creado a Leído</p>
+          <p class="mt-2 text-2xl font-bold text-slate-800"><%= @stage_times[:avg_to_read] || "—" %><span class="text-sm font-normal text-slate-500">h</span></p>
+        </div>
+        <div class="rounded-lg bg-slate-50 p-4 text-center">
+          <p class="text-xs font-medium text-slate-500 uppercase">Leído a Asignado</p>
+          <p class="mt-2 text-2xl font-bold text-slate-800"><%= @stage_times[:avg_to_assign] || "—" %><span class="text-sm font-normal text-slate-500">h</span></p>
+        </div>
+        <div class="rounded-lg bg-slate-50 p-4 text-center">
+          <p class="text-xs font-medium text-slate-500 uppercase">Asignado a Resuelto</p>
+          <p class="mt-2 text-2xl font-bold text-slate-800"><%= @stage_times[:avg_to_resolve] || "—" %><span class="text-sm font-normal text-slate-500">h</span></p>
+        </div>
+        <div class="rounded-lg bg-teal-50 p-4 text-center">
+          <p class="text-xs font-medium text-teal-700 uppercase">Tiempo total</p>
+          <p class="mt-2 text-2xl font-bold text-teal-700"><%= @stage_times[:avg_total] || "—" %><span class="text-sm font-normal text-teal-600">h</span></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+      <!-- Official load -->
+      <div class="rounded-xl border border-slate-200 bg-white">
+        <div class="border-b border-slate-100 px-5 py-4">
+          <h2 class="text-lg font-semibold text-slate-800">Carga por funcionario</h2>
+          <p class="text-sm text-slate-500">Reportes abiertos asignados</p>
+        </div>
+        <div class="divide-y divide-slate-100">
+          <% if @official_load.any? %>
+            <% @official_load.each do |o| %>
+              <div class="flex items-center justify-between px-5 py-3">
+                <span class="text-sm font-medium text-slate-700"><%= o.name %></span>
+                <span class="rounded-full px-3 py-1 text-sm font-semibold <%= o.open_count.to_i > 5 ? 'bg-red-50 text-red-700' : 'bg-teal-50 text-teal-700' %>">
+                  <%= o.open_count %>
+                </span>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="px-5 py-6 text-center text-sm text-slate-400">Sin datos.</div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Reopens by official -->
+      <div class="rounded-xl border border-slate-200 bg-white">
+        <div class="border-b border-slate-100 px-5 py-4">
+          <h2 class="text-lg font-semibold text-slate-800">Reaperturas por funcionario</h2>
+          <p class="text-sm text-slate-500">Reportes rechazados por ciudadanos</p>
+        </div>
+        <div class="divide-y divide-slate-100">
+          <% if @official_reopens.any? %>
+            <% @official_reopens.each do |o| %>
+              <div class="flex items-center justify-between px-5 py-3">
+                <span class="text-sm font-medium text-slate-700"><%= o.name %></span>
+                <span class="rounded-full bg-red-50 px-3 py-1 text-sm font-semibold text-red-700"><%= o.reopen_count %></span>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="px-5 py-6 text-center text-sm text-slate-400">Sin reaperturas.</div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+  <!-- ═══ TRENDS TAB ═══ -->
+  <% elsif @tab == "trends" %>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+      <!-- By day of week -->
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold text-slate-800">Reportes por día de la semana</h2>
+          <button type="button" data-chart-export="dow-chart" class="inline-flex items-center px-3 py-1.5 rounded text-xs font-semibold text-white no-underline" style="background-color: #475569;">Descargar PNG</button>
+        </div>
+        <div style="position: relative; height: 250px;">
+          <canvas id="dow-chart"></canvas>
+        </div>
+        <script>
+          (function() {
+            var raw = <%= raw @by_dow.to_json %>;
+            function init() {
+              var el = document.getElementById("dow-chart");
+              if (!el || typeof Chart === "undefined") return;
+              var existing = Chart.getChart(el); if (existing) existing.destroy();
+              var days = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+              var counts = new Array(7).fill(0);
+              raw.forEach(function(r) { counts[r.dow] = r.count; });
+              new Chart(el, {
+                type: "bar",
+                data: { labels: days, datasets: [{ data: counts, backgroundColor: "#0d9488" }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+              });
+            }
+            document.addEventListener("turbo:load", init);
+            init();
+          })();
+        </script>
+      </div>
+
+      <!-- By hour -->
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold text-slate-800">Reportes por hora del día</h2>
+          <button type="button" data-chart-export="hour-chart" class="inline-flex items-center px-3 py-1.5 rounded text-xs font-semibold text-white no-underline" style="background-color: #475569;">Descargar PNG</button>
+        </div>
+        <div style="position: relative; height: 250px;">
+          <canvas id="hour-chart"></canvas>
+        </div>
+        <script>
+          (function() {
+            var raw = <%= raw @by_hour.to_json %>;
+            function init() {
+              var el = document.getElementById("hour-chart");
+              if (!el || typeof Chart === "undefined") return;
+              var existing = Chart.getChart(el); if (existing) existing.destroy();
+              var labels = []; var counts = [];
+              for (var h = 0; h < 24; h++) { labels.push(h + ":00"); var found = raw.find(function(r){return r.hour===h}); counts.push(found ? found.count : 0); }
+              new Chart(el, {
+                type: "bar",
+                data: { labels: labels, datasets: [{ data: counts, backgroundColor: "#3b82f6" }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+              });
+            }
+            document.addEventListener("turbo:load", init);
+            init();
+          })();
+        </script>
+      </div>
+    </div>
+
+    <!-- Monthly comparison -->
+    <div class="rounded-xl border border-slate-200 bg-white">
+      <div class="border-b border-slate-100 px-5 py-4">
+        <h2 class="text-lg font-semibold text-slate-800">Comparativa mensual por categoría</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">Mes</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Total</th>
+              <% if @monthly_comparison.first %>
+                <% @monthly_comparison.first[:categories].each do |cat| %>
+                  <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600"><%= cat[:name] %></th>
+                <% end %>
+              <% end %>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            <% @monthly_comparison.each do |row| %>
+              <tr class="hover:bg-slate-50">
+                <td class="px-4 py-3 text-sm font-medium text-slate-800"><%= row[:month] %></td>
+                <td class="px-4 py-3 text-sm font-semibold text-slate-800 text-right"><%= row[:total] %></td>
+                <% row[:categories].each do |cat| %>
+                  <td class="px-4 py-3 text-sm text-slate-600 text-right"><%= cat[:count] %></td>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Problem categories -->
+    <div class="rounded-xl border border-slate-200 bg-white">
+      <div class="border-b border-slate-100 px-5 py-4">
+        <h2 class="text-lg font-semibold text-slate-800">Categorías problemáticas</h2>
+        <p class="text-sm text-slate-500">Reportes abiertos, reaperturas y SLA</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">Categoría</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Abiertos</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Reabiertos</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">SLA</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            <% @problem_categories.each do |row| %>
+              <tr class="hover:bg-slate-50">
+                <td class="px-4 py-3 text-sm font-medium text-slate-800"><%= row.cat_name %></td>
+                <td class="px-4 py-3 text-sm text-slate-600 text-right"><%= row.open_count %></td>
+                <td class="px-4 py-3 text-sm text-right"><span class="<%= row.reopen_count.to_i > 0 ? 'text-red-600 font-semibold' : 'text-slate-600' %>"><%= row.reopen_count %></span></td>
+                <td class="px-4 py-3 text-sm text-slate-500 text-right"><%= row.sla_hours ? "#{row.sla_hours}h" : "—" %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Top locations -->
+    <div class="rounded-xl border border-slate-200 bg-white">
+      <div class="border-b border-slate-100 px-5 py-4">
+        <h2 class="text-lg font-semibold text-slate-800">Zonas con más reportes</h2>
+      </div>
+      <div class="divide-y divide-slate-100">
+        <% @top_locations.each_with_index do |loc, idx| %>
+          <div class="flex items-center justify-between px-5 py-3">
+            <div class="flex items-center gap-3">
+              <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600"><%= idx + 1 %></span>
+              <span class="text-sm text-slate-700"><%= loc.location_description.truncate(60) %></span>
+            </div>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700"><%= loc.cnt %></span>
+          </div>
+        <% end %>
+        <% if @top_locations.empty? %>
+          <div class="px-5 py-6 text-center text-sm text-slate-400">Sin datos de ubicación.</div>
+        <% end %>
+      </div>
+    </div>
+
+  <!-- ═══ SLA TAB ═══ -->
+  <% elsif @tab == "sla" %>
+
+    <!-- SLA trend chart -->
+    <% if @sla_trend.any? { |r| r[:total] > 0 } %>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold text-slate-800">Tendencia de cumplimiento SLA</h2>
+          <button type="button" data-chart-export="sla-trend-chart" class="inline-flex items-center px-3 py-1.5 rounded text-xs font-semibold text-white no-underline" style="background-color: #475569;">Descargar PNG</button>
+        </div>
+        <div style="position: relative; height: 280px;">
+          <canvas id="sla-trend-chart"></canvas>
+        </div>
+        <script>
+          (function() {
+            var data = <%= raw @sla_trend.to_json %>;
+            function init() {
+              var el = document.getElementById("sla-trend-chart");
+              if (!el || typeof Chart === "undefined") return;
+              var existing = Chart.getChart(el); if (existing) existing.destroy();
+              new Chart(el, {
+                type: "line",
+                data: {
+                  labels: data.map(function(r){return r.month}),
+                  datasets: [{
+                    label: "% Cumplimiento SLA",
+                    data: data.map(function(r){return r.pct}),
+                    borderColor: "#0d9488", backgroundColor: "rgba(13,148,136,0.1)",
+                    tension: 0.3, fill: true
+                  }]
+                },
+                options: {
+                  responsive: true, maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: { y: { beginAtZero: true, max: 100, ticks: { callback: function(v){return v+"%"} } } }
+                }
+              });
+            }
+            document.addEventListener("turbo:load", init);
+            init();
+          })();
+        </script>
+      </div>
+    <% end %>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+      <!-- SLA by category -->
+      <div class="rounded-xl border border-slate-200 bg-white">
+        <div class="border-b border-slate-100 px-5 py-4">
+          <h2 class="text-lg font-semibold text-slate-800">Cumplimiento SLA por categoría</h2>
+        </div>
+        <div class="divide-y divide-slate-100">
+          <% @sla_by_category.each do |row| %>
+            <% pct = row.total.to_i > 0 ? (row.within_sla.to_i.to_f / row.total.to_i * 100).round(1) : 0 %>
+            <div class="px-5 py-3">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-slate-700"><%= row.cat_name %> <span class="text-xs text-slate-400">(<%= row.sla_hours %>h)</span></span>
+                <span class="text-sm font-semibold <%= pct >= 80 ? 'text-teal-600' : pct >= 50 ? 'text-amber-600' : 'text-red-600' %>"><%= pct %>%</span>
+              </div>
+              <div class="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div class="h-full rounded-full <%= pct >= 80 ? 'bg-teal-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500' %>" style="width: <%= pct %>%"></div>
+              </div>
+              <p class="mt-1 text-xs text-slate-400"><%= row.within_sla %> de <%= row.total %> dentro de SLA</p>
+            </div>
+          <% end %>
+          <% if @sla_by_category.empty? %>
+            <div class="px-5 py-6 text-center text-sm text-slate-400">Sin categorías con SLA configurado.</div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- SLA by official -->
+      <div class="rounded-xl border border-slate-200 bg-white">
+        <div class="border-b border-slate-100 px-5 py-4">
+          <h2 class="text-lg font-semibold text-slate-800">Cumplimiento SLA por funcionario</h2>
+        </div>
+        <div class="divide-y divide-slate-100">
+          <% @sla_by_official.each do |row| %>
+            <% pct = row.total.to_i > 0 ? (row.within_sla.to_i.to_f / row.total.to_i * 100).round(1) : 0 %>
+            <div class="px-5 py-3">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-slate-700"><%= row.name %></span>
+                <span class="text-sm font-semibold <%= pct >= 80 ? 'text-teal-600' : pct >= 50 ? 'text-amber-600' : 'text-red-600' %>"><%= pct %>%</span>
+              </div>
+              <div class="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div class="h-full rounded-full <%= pct >= 80 ? 'bg-teal-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500' %>" style="width: <%= pct %>%"></div>
+              </div>
+              <p class="mt-1 text-xs text-slate-400"><%= row.within_sla %> de <%= row.total %> dentro de SLA</p>
+            </div>
+          <% end %>
+          <% if @sla_by_official.empty? %>
+            <div class="px-5 py-6 text-center text-sm text-slate-400">Sin datos.</div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Red flags -->
+    <div class="rounded-xl border border-red-200 bg-white">
+      <div class="border-b border-red-100 px-5 py-4">
+        <h2 class="text-lg font-semibold text-red-800">Focos rojos</h2>
+        <p class="text-sm text-red-600">Reportes abiertos que ya superaron su SLA</p>
+      </div>
+      <div class="divide-y divide-slate-100">
+        <% @red_flags.each do |report| %>
+          <% hours = ((Time.current - report.created_at) / 3600.0).round(1) %>
+          <% sla = report.respond_to?(:cat_sla_hours) ? report.cat_sla_hours : report.category&.sla_hours %>
+          <% cat_name = report.respond_to?(:cat_name) ? report.cat_name : report.category&.name %>
+          <div class="px-5 py-3">
+            <div class="flex items-center justify-between">
+              <p class="truncate text-sm font-medium text-slate-700">
+                <%= link_to report.description.truncate(60), report_path(report), class: "hover:text-teal-600" %>
+              </p>
+              <span class="ml-3 shrink-0 text-xs font-semibold text-red-600"><%= hours %>h / <%= sla %>h</span>
+            </div>
+            <p class="mt-0.5 text-xs text-slate-400">
+              <%= cat_name %> · <%= report.alcaldia&.name %> · Asignado a: <%= report.assignee&.name || "Sin asignar" %>
+            </p>
+          </div>
+        <% end %>
+        <% if @red_flags.empty? %>
+          <div class="px-5 py-6 text-center text-sm text-slate-400">Sin focos rojos. Todo dentro de SLA.</div>
+        <% end %>
+      </div>
+    </div>
+
+  <!-- ═══ SATISFACTION TAB ═══ -->
+  <% elsif @tab == "satisfaction" %>
+
+    <!-- Summary cards -->
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="rounded-xl border border-slate-200 bg-white p-5 text-center">
+        <p class="text-xs font-medium text-slate-500 uppercase">Total resueltos</p>
+        <p class="mt-2 text-3xl font-bold text-slate-800"><%= @total_resolved %></p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5 text-center">
+        <p class="text-xs font-medium text-slate-500 uppercase">Aceptados</p>
+        <p class="mt-2 text-3xl font-bold text-teal-600"><%= @accepted_count %></p>
+        <p class="mt-1 text-xs text-slate-400"><%= @total_resolved > 0 ? "#{(@accepted_count.to_f / @total_resolved * 100).round(1)}%" : "—" %></p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5 text-center">
+        <p class="text-xs font-medium text-slate-500 uppercase">Rechazados</p>
+        <p class="mt-2 text-3xl font-bold text-red-600"><%= @rejected_count %></p>
+        <p class="mt-1 text-xs text-slate-400"><%= @total_resolved > 0 ? "#{(@rejected_count.to_f / @total_resolved * 100).round(1)}%" : "—" %></p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5 text-center">
+        <p class="text-xs font-medium text-slate-500 uppercase">Sin respuesta</p>
+        <p class="mt-2 text-3xl font-bold text-slate-500"><%= @no_response_count %></p>
+        <p class="mt-1 text-xs text-slate-400"><%= @total_resolved > 0 ? "#{(@no_response_count.to_f / @total_resolved * 100).round(1)}%" : "—" %></p>
+      </div>
+    </div>
+
+    <!-- Donut chart -->
+    <% if @total_resolved > 0 %>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold text-slate-800">Distribución de satisfacción</h2>
+          <button type="button" data-chart-export="satisfaction-chart" class="inline-flex items-center px-3 py-1.5 rounded text-xs font-semibold text-white no-underline" style="background-color: #475569;">Descargar PNG</button>
+        </div>
+        <div style="position: relative; height: 280px;">
+          <canvas id="satisfaction-chart"></canvas>
+        </div>
+        <script>
+          (function() {
+            var accepted = <%= @accepted_count %>, rejected = <%= @rejected_count %>, noResp = <%= @no_response_count %>;
+            function init() {
+              var el = document.getElementById("satisfaction-chart");
+              if (!el || typeof Chart === "undefined") return;
+              var existing = Chart.getChart(el); if (existing) existing.destroy();
+              new Chart(el, {
+                type: "doughnut",
+                data: {
+                  labels: ["Aceptados", "Rechazados", "Sin respuesta"],
+                  datasets: [{ data: [accepted, rejected, noResp], backgroundColor: ["#0d9488", "#ef4444", "#94a3b8"] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } }
+              });
+            }
+            document.addEventListener("turbo:load", init);
+            init();
+          })();
+        </script>
+      </div>
+    <% end %>
+
+    <!-- Acceptance by category -->
+    <div class="rounded-xl border border-slate-200 bg-white">
+      <div class="border-b border-slate-100 px-5 py-4">
+        <h2 class="text-lg font-semibold text-slate-800">Satisfacción por categoría</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">Categoría</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Resueltos</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Aceptados</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Rechazados</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">% Aceptación</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            <% @acceptance_by_category.each do |row| %>
+              <% acc_pct = row.total.to_i > 0 ? (row.accepted.to_i.to_f / row.total.to_i * 100).round(1) : 0 %>
+              <tr class="hover:bg-slate-50">
+                <td class="px-4 py-3 text-sm font-medium text-slate-800"><%= row.cat_name %></td>
+                <td class="px-4 py-3 text-sm text-slate-600 text-right"><%= row.total %></td>
+                <td class="px-4 py-3 text-sm text-teal-600 text-right"><%= row.accepted %></td>
+                <td class="px-4 py-3 text-sm text-red-600 text-right"><%= row.rejected %></td>
+                <td class="px-4 py-3 text-right">
+                  <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold <%= acc_pct >= 80 ? 'bg-teal-50 text-teal-700' : acc_pct >= 50 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700' %>">
+                    <%= acc_pct %>%
+                  </span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Inactive reports -->
+    <div class="rounded-xl border border-amber-200 bg-white">
+      <div class="border-b border-amber-100 px-5 py-4">
+        <h2 class="text-lg font-semibold text-amber-800">Reportes sin actividad</h2>
+        <p class="text-sm text-amber-600">Más de 7 días sin ser asignados</p>
+      </div>
+      <div class="divide-y divide-slate-100">
+        <% @inactive_reports.each do |report| %>
+          <% days_old = ((Time.current - report.created_at) / 86400.0).round(0) %>
+          <div class="px-5 py-3">
+            <div class="flex items-center justify-between">
+              <p class="truncate text-sm font-medium text-slate-700">
+                <%= link_to report.description.truncate(60), report_path(report), class: "hover:text-teal-600" %>
+              </p>
+              <span class="ml-3 shrink-0 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700"><%= days_old %> días</span>
+            </div>
+            <p class="mt-0.5 text-xs text-slate-400">
+              <%= report.category&.name %> · <%= report.alcaldia&.name %> · <%= report.reporter&.name %>
+            </p>
+          </div>
+        <% end %>
+        <% if @inactive_reports.empty? %>
+          <div class="px-5 py-6 text-center text-sm text-slate-400">Todos los reportes tienen actividad reciente.</div>
+        <% end %>
+      </div>
+    </div>
+
+  <!-- ═══ ZONAS TAB ═══ -->
+  <% elsif @tab == "zonas" %>
+
+    <div class="rounded-xl border border-slate-200 bg-white">
+      <div class="border-b border-slate-100 px-5 py-4">
+        <h2 class="text-lg font-semibold text-slate-800">Reporte por colonia/zona</h2>
+        <p class="text-sm text-slate-500">Agregación territorial para planeación. Zonas con más reportes por categoría.</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">Zona / Ubicación</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">Categoría</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Total</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Resueltos</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            <% (@report_by_zone || []).each do |row| %>
+              <tr class="hover:bg-slate-50">
+                <td class="px-4 py-3 text-sm text-slate-800"><%= row.respond_to?(:zona) ? row.zona : row[:zona] %></td>
+                <td class="px-4 py-3 text-sm text-slate-600"><%= row.respond_to?(:categoria) ? row.categoria : row[:categoria] %></td>
+                <td class="px-4 py-3 text-sm text-slate-600 text-right"><%= row.respond_to?(:total) ? row.total : row[:total] %></td>
+                <td class="px-4 py-3 text-sm text-teal-600 text-right"><%= row.respond_to?(:resueltos) ? row.resueltos : row[:resueltos] %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      <% if (@report_by_zone || []).empty? %>
+        <div class="px-5 py-8 text-center text-sm text-slate-400">Sin datos de ubicación en el período seleccionado.</div>
+      <% end %>
+    </div>
+
+    <div class="mt-6 rounded-xl border border-slate-200 bg-white">
+      <div class="border-b border-slate-100 px-5 py-4">
+        <h2 class="text-lg font-semibold text-slate-800">Top 10 zonas con más reportes</h2>
+      </div>
+      <div class="divide-y divide-slate-100">
+        <% (@top_locations || []).each_with_index do |loc, idx| %>
+          <div class="flex items-center justify-between px-5 py-3">
+            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600"><%= idx + 1 %></span>
+            <span class="flex-1 mx-3 text-sm text-slate-700"><%= loc.respond_to?(:location_description) ? loc.location_description : loc[:location_description] %></span>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700"><%= loc.respond_to?(:cnt) ? loc.cnt : loc[:cnt] %></span>
+          </div>
+        <% end %>
+        <% if (@top_locations || []).empty? %>
+          <div class="px-5 py-6 text-center text-sm text-slate-400">Sin datos.</div>
+        <% end %>
+      </div>
+    </div>
+
+  <% end %>
+
+  <div class="mt-6">
+    <%= link_to "← Volver al admin", admin_root_path, class: "text-sm text-slate-600 hover:text-slate-800" %>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("turbo:load", function() {
+    document.querySelectorAll("[data-chart-export]").forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        var chartId = this.dataset.chartExport;
+        var chart = Chart.getChart(document.getElementById(chartId));
+        if (chart) {
+          var a = document.createElement("a");
+          a.href = chart.toBase64Image("image/png");
+          a.download = (chartId || "grafico") + ".png";
+          a.click();
+        }
+      });
+    });
+  });
+</script>

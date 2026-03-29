@@ -1,0 +1,266 @@
+<div class="max-w-xl">
+  <h1 class="text-2xl font-bold text-slate-800"><%= t("reports.new.title") %></h1>
+  <% if flash[:alert] %>
+    <div class="mt-4 p-3 rounded-lg bg-amber-50 text-amber-800 text-sm"><%= flash[:alert] %></div>
+  <% end %>
+
+  <%= form_with model: @report, url: reports_path, method: :post, class: "mt-6 space-y-5", data: { turbo: false }, multipart: true do |f| %>
+    <div>
+      <%= f.label :alcaldia_id, "Alcaldía", class: "block text-sm font-medium text-slate-700 mb-1" %>
+      <%= f.collection_select :alcaldia_id, @alcaldias || [], :id, :name, { prompt: "" }, { required: true, id: "report_alcaldia_id", data: { searchable: true, placeholder: "Buscar alcaldía..." }, class: "w-full rounded-lg border border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
+    </div>
+
+    <div>
+      <%= f.label :category_id, t("reports.new.category"), class: "block text-sm font-medium text-slate-700 mb-1" %>
+      <select name="report[category_id]" id="report_category_id" required disabled data-searchable="true" data-placeholder="Buscar categoría..." class="w-full rounded-lg border border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+        <option value=""><%= t("reports.new.select_alcaldia_first") %></option>
+      </select>
+      <p id="category-hint" class="mt-1 text-xs text-slate-500"><%= t("reports.new.select_alcaldia_first") %></p>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-4">
+      <h3 class="text-sm font-medium text-slate-700">Descripción y fotos</h3>
+      <div class="grid gap-4 lg:grid-cols-[1fr_auto]">
+        <div>
+          <%= f.label :description, t("reports.new.description"), class: "block text-sm font-medium text-slate-700 mb-1" %>
+          <%= f.text_area :description, rows: 4, required: true, placeholder: "Describe el problema...", class: "w-full rounded-lg border border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
+        </div>
+        <div class="flex flex-col">
+          <%= f.label :photos, t("reports.new.photos"), class: "block text-sm font-medium text-slate-700 mb-1" %>
+          <div class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 cursor-pointer text-sm font-medium border border-teal-200 self-start" onclick="this.querySelector('input[type=file]').click()">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <span>Elegir fotos</span>
+            <%= f.file_field :photos, multiple: true, accept: "image/*", style: "position:fixed;left:-9999px;width:1px;height:1px;opacity:0", onchange: "this.closest('[onclick]').querySelector('.file-count').textContent = this.files.length ? this.files.length + ' archivo(s)' : 'Ningún archivo'" %>
+            <span class="file-count text-slate-500 font-normal">Ningún archivo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 p-4 space-y-4">
+      <h3 class="text-sm font-medium text-slate-700"><%= t("reports.new.location_map") %></h3>
+      <div class="rounded-lg border border-slate-300 overflow-hidden" style="height: 280px;" id="report-map"></div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" id="gps-btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 text-sm font-medium">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Usar mi ubicación
+        </button>
+        <span id="coords-display" class="text-xs text-slate-500"></span>
+      </div>
+      <div>
+        <%= f.label :location_description, t("reports.new.location"), class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= f.text_field :location_description, id: "report_location_description", readonly: true, placeholder: t("reports.new.location_hint"), class: "w-full rounded-lg border border-slate-300 bg-slate-50 shadow-sm text-slate-700 cursor-default" %>
+        <p class="mt-1 text-xs text-slate-500"><%= t("reports.new.location_auto_hint") %></p>
+      </div>
+      <%= f.hidden_field :latitude, id: "report_latitude" %>
+      <%= f.hidden_field :longitude, id: "report_longitude" %>
+    </div>
+
+    <%= f.submit t("reports.new.submit"), class: "w-full py-2.5 px-4 rounded-lg bg-teal-600 text-white font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2" %>
+  <% end %>
+</div>
+
+<script>
+document.addEventListener("turbo:load", function() {
+  var el = document.getElementById("report-map");
+  if (!el || typeof L === "undefined") return;
+  if (el._leaflet_id && window._reportNewMap) {
+    window._reportNewMap.remove();
+    window._reportNewMap = null;
+  }
+  var DEFAULT_CENTER = [26.50, -100.17];
+  var DEFAULT_ZOOM = 13;
+  var map = L.map("report-map").setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+  window._reportNewMap = map;
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    maxZoom: 19
+  }).addTo(map);
+
+  var marker = null;
+  var boundaryLayer = null;
+  var reverseTimer = null;
+  var latInput = document.getElementById("report_latitude");
+  var lngInput = document.getElementById("report_longitude");
+  var coordsDisplay = document.getElementById("coords-display");
+  var locationInput = document.getElementById("report_location_description");
+
+  function setMarker(lat, lng) {
+    if (marker) { marker.setLatLng([lat, lng]); }
+    else { marker = L.marker([lat, lng], { draggable: true }).addTo(map); marker.on("dragend", onMarkerDrag); }
+    latInput.value = lat.toFixed(7);
+    lngInput.value = lng.toFixed(7);
+    coordsDisplay.textContent = lat.toFixed(5) + ", " + lng.toFixed(5);
+    reverseGeocode(lat, lng);
+  }
+
+  function reverseGeocode(lat, lng) {
+    if (reverseTimer) clearTimeout(reverseTimer);
+    reverseTimer = setTimeout(function() {
+      locationInput.setAttribute("placeholder", "Buscando dirección...");
+      fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lng + "&zoom=18&addressdetails=1", {
+        headers: { "Accept-Language": "es" }
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data && data.address) {
+            var a = data.address;
+            var parts = [];
+            if (a.road) parts.push(a.road);
+            if (a.house_number) parts[parts.length - 1] += " " + a.house_number;
+            if (a.neighbourhood || a.suburb) parts.push(a.neighbourhood || a.suburb);
+            if (a.city || a.town || a.village || a.municipality) parts.push(a.city || a.town || a.village || a.municipality);
+            locationInput.value = parts.join(", ") || data.display_name || "";
+          } else if (data && data.display_name) {
+            locationInput.value = data.display_name;
+          }
+          locationInput.setAttribute("placeholder", "<%= t('reports.new.location_hint') %>");
+        })
+        .catch(function() {
+          locationInput.setAttribute("placeholder", "<%= t('reports.new.location_hint') %>");
+        });
+    }, 400);
+  }
+
+  function onMarkerDrag(e) {
+    var pos = e.target.getLatLng();
+    setMarker(pos.lat, pos.lng);
+  }
+
+  map.on("click", function(e) {
+    setMarker(e.latlng.lat, e.latlng.lng);
+  });
+
+  var gpsBtnIcon = '<svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
+
+  document.getElementById("gps-btn").addEventListener("click", function() {
+    var btn = this;
+    if (!navigator.geolocation) {
+      coordsDisplay.textContent = "Tu navegador no soporta geolocalización.";
+      coordsDisplay.className = "text-xs text-red-600";
+      return;
+    }
+    btn.innerHTML = gpsBtnIcon + ' Obteniendo...';
+    btn.disabled = true;
+    coordsDisplay.textContent = "";
+    coordsDisplay.className = "text-xs text-slate-500";
+
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        var lat = pos.coords.latitude, lng = pos.coords.longitude;
+        setMarker(lat, lng);
+        map.setView([lat, lng], 16);
+        btn.innerHTML = gpsBtnIcon + ' Usar mi ubicación';
+        btn.disabled = false;
+      },
+      function(err) {
+        btn.innerHTML = gpsBtnIcon + ' Usar mi ubicación';
+        btn.disabled = false;
+        var msg = "No se pudo obtener tu ubicación.";
+        if (err.code === 1) msg = "Permiso de ubicación denegado. Revisa los permisos del navegador.";
+        else if (err.code === 2) msg = "Ubicación no disponible. Marca el punto directamente en el mapa.";
+        else if (err.code === 3) msg = "Tiempo de espera agotado. Intenta de nuevo.";
+        coordsDisplay.textContent = msg;
+        coordsDisplay.className = "text-xs text-red-600";
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+    );
+  });
+
+  var alcaldiaSelect = document.getElementById("report_alcaldia_id");
+  var categorySelect = document.getElementById("report_category_id");
+  var categoryHint = document.getElementById("category-hint");
+  var preservedCategoryId = categorySelect ? categorySelect.value : null;
+  function getCategoryTS() { return categorySelect ? categorySelect.tomselect : null; }
+
+  function disableCategorySelect() {
+    var ts = getCategoryTS();
+    var hintText = "<%= j t('reports.new.select_alcaldia_first') %>";
+    if (ts) {
+      ts.clear(true);
+      ts.clearOptions();
+      ts.addOption({ value: "", text: hintText });
+      ts.disable();
+      ts.settings.placeholder = hintText;
+      ts.inputState();
+    } else if (categorySelect) {
+      categorySelect.innerHTML = '<option value="">' + hintText + '</option>';
+      categorySelect.disabled = true;
+    }
+    if (categoryHint) categoryHint.classList.remove("hidden");
+  }
+
+  function enableCategorySelect(cats) {
+    var ts = getCategoryTS();
+    var selectVal = preservedCategoryId || "";
+    if (ts) {
+      ts.clear(true);
+      ts.clearOptions();
+      ts.addOption({ value: "", text: "" });
+      cats.forEach(function(c) {
+        ts.addOption({ value: String(c.id), text: c.name });
+      });
+      ts.enable();
+      ts.settings.placeholder = "<%= j t('reports.new.category') %>";
+      ts.inputState();
+      if (selectVal) ts.setValue(String(selectVal), true);
+    } else if (categorySelect) {
+      categorySelect.innerHTML = '<option value=""></option>';
+      cats.forEach(function(c) {
+        var opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name;
+        if (String(c.id) === String(selectVal)) opt.selected = true;
+        categorySelect.appendChild(opt);
+      });
+      categorySelect.disabled = false;
+    }
+    preservedCategoryId = null;
+    if (categoryHint) categoryHint.classList.add("hidden");
+  }
+
+  function loadCategories(alcaldiaId) {
+    if (!categorySelect) return;
+    if (!alcaldiaId) { disableCategorySelect(); return; }
+    fetch("/alcaldias/" + alcaldiaId + "/categories", { headers: { "Accept": "application/json" } })
+      .then(function(r) { return r.json(); })
+      .then(function(cats) { enableCategorySelect(cats); })
+      .catch(function() { disableCategorySelect(); });
+  }
+
+  if (alcaldiaSelect) {
+    alcaldiaSelect.addEventListener("change", function() {
+      if (boundaryLayer) { map.removeLayer(boundaryLayer); boundaryLayer = null; }
+      var id = this.value;
+      loadCategories(id);
+      if (!id) return;
+      fetch("/alcaldias/" + id + "/boundary", { headers: { "Accept": "application/json" } })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.boundary) {
+            boundaryLayer = L.geoJSON(data.boundary, {
+              style: { color: "#0d9488", weight: 2, fillOpacity: 0.08 }
+            }).addTo(map);
+            map.fitBounds(boundaryLayer.getBounds(), { padding: [20, 20] });
+          }
+        })
+        .catch(function() {});
+    });
+
+    setTimeout(function() {
+      if (alcaldiaSelect.value) {
+        loadCategories(alcaldiaSelect.value);
+      } else {
+        disableCategorySelect();
+      }
+    }, 0);
+  }
+
+  if (latInput.value && lngInput.value) {
+    setMarker(parseFloat(latInput.value), parseFloat(lngInput.value));
+  }
+});
+document.addEventListener("turbo:before-cache", function() {
+  if (window._reportNewMap) { window._reportNewMap.remove(); window._reportNewMap = null; }
+});
+</script>

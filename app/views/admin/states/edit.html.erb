@@ -1,0 +1,32 @@
+<div class="max-w-lg">
+  <h1 class="text-2xl font-bold text-slate-800"><%= I18n.t("admin.states.edit") %></h1>
+
+  <% if flash[:alert] %>
+    <div class="mt-4 p-3 rounded-lg bg-red-50 text-red-800 text-sm"><%= flash[:alert] %></div>
+  <% end %>
+
+  <%= form_with model: @state, url: admin_state_path(@state), method: :patch, class: "mt-6 space-y-4" do |f| %>
+    <% if @state.errors.any? %>
+      <div class="rounded-lg bg-red-50 p-4 text-sm text-red-800">
+        <%= @state.errors.full_messages.join(", ") %>
+      </div>
+    <% end %>
+
+    <div>
+      <%= f.label :name, I18n.t("admin.states.form.name"), class: "block text-sm font-medium text-slate-700 mb-1" %>
+      <%= f.text_field :name, required: true, class: "w-full rounded-lg border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
+    </div>
+
+    <div>
+      <%= f.label :code, I18n.t("admin.states.form.code"), class: "block text-sm font-medium text-slate-700 mb-1" %>
+      <%= f.text_field :code, required: true, maxlength: 5, class: "w-full rounded-lg border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
+    </div>
+
+    <div class="flex gap-3 pt-2">
+      <%= f.submit I18n.t("admin.states.form.save"), class: "rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700" %>
+      <%= link_to I18n.t("admin.states.form.cancel"), admin_states_path, class: "rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" %>
+    </div>
+  <% end %>
+
+  <%= link_to "← #{I18n.t('admin.states.back_to_list')}", admin_states_path, class: "mt-6 inline-block text-sm text-slate-600 hover:text-slate-800" %>
+</div>

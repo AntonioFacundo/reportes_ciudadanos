@@ -1,0 +1,28 @@
+<div class="max-w-lg">
+  <h1 class="text-2xl font-bold text-slate-800">Nueva alcaldía</h1>
+
+  <%= form_with model: @alcaldia, url: admin_alcaldias_path, class: "mt-6 space-y-4" do |f| %>
+    <% if @alcaldia.errors.any? %>
+      <div class="rounded-lg bg-red-50 p-4 text-sm text-red-800">
+        <%= @alcaldia.errors.full_messages.join(", ") %>
+      </div>
+    <% end %>
+
+    <div>
+      <%= f.label :state_id, "Estado", class: "block text-sm font-medium text-slate-700 mb-1" %>
+      <%= f.collection_select :state_id, @states, :id, :name, { prompt: "Seleccionar estado" }, { required: true, class: "w-full rounded-lg border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
+    </div>
+
+    <div>
+      <%= f.label :name, "Nombre", class: "block text-sm font-medium text-slate-700 mb-1" %>
+      <%= f.text_field :name, required: true, class: "w-full rounded-lg border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500", placeholder: "Ej: Sabinas Hidalgo, Monterrey" %>
+    </div>
+
+    <div class="flex gap-3 pt-2">
+      <%= f.submit "Crear alcaldía", class: "rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700" %>
+      <%= link_to "Cancelar", admin_alcaldias_path, class: "rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" %>
+    </div>
+  <% end %>
+
+  <%= link_to "← Volver a alcaldías", admin_alcaldias_path, class: "mt-6 inline-block text-sm text-slate-600 hover:text-slate-800" %>
+</div>

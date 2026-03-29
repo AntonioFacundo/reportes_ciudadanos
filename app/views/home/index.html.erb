@@ -1,0 +1,302 @@
+<div class="space-y-8">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-800">Bienvenido, <%= @user&.name %>.</h1>
+    <% if @user&.government? %>
+      <p class="mt-1 text-sm text-slate-500">
+        <%= t("admin.roles.#{@user.role}", default: @user.role.humanize) %>
+        <% if @user.alcaldia.present? %>
+          &mdash; <%= @user.alcaldia.name %>
+        <% end %>
+      </p>
+    <% else %>
+      <p class="mt-2 text-slate-600">Gestiona reportes ciudadanos desde aquí.</p>
+    <% end %>
+  </div>
+
+  <% if @user&.system_admin? || @user&.mayor? %>
+    <!-- ═══════════════ ADMIN / MAYOR DASHBOARD ═══════════════ -->
+
+    <!-- Summary cards -->
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <p class="text-sm font-medium text-slate-500">Total reportes</p>
+        <p class="mt-1 text-3xl font-bold text-slate-800"><%= @total_reports %></p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <p class="text-sm font-medium text-slate-500">Pendientes</p>
+        <p class="mt-1 text-3xl font-bold text-amber-600"><%= @pending_count %></p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <p class="text-sm font-medium text-slate-500">Asignados</p>
+        <p class="mt-1 text-3xl font-bold text-blue-600"><%= @assigned_count %></p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <p class="text-sm font-medium text-slate-500">Resueltos</p>
+        <p class="mt-1 text-3xl font-bold text-teal-600"><%= @resolved_count %></p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <p class="text-sm font-medium text-slate-500">Atrasados</p>
+        <p class="mt-1 text-3xl font-bold text-red-600"><%= @overdue_count %></p>
+      </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+      <!-- Leaderboard -->
+      <div class="rounded-xl border border-slate-200 bg-white">
+        <div class="border-b border-slate-100 px-5 py-4">
+          <h2 class="text-lg font-semibold text-slate-800">Top funcionarios</h2>
+          <p class="text-sm text-slate-500">Por reportes resueltos</p>
+        </div>
+        <div class="divide-y divide-slate-100">
+          <% if @leaderboard.any? %>
+            <% @leaderboard.each_with_index do |official, idx| %>
+              <div class="flex items-center justify-between px-5 py-3">
+                <div class="flex items-center gap-3">
+                  <span class="flex h-8 w-8 items-center justify-center rounded-full
+                    <%= idx == 0 ? 'bg-teal-100 text-teal-700 font-bold' : 'bg-slate-100 text-slate-600' %>
+                    text-sm">
+                    <%= idx + 1 %>
+                  </span>
+                  <span class="text-sm font-medium text-slate-700"><%= official.name %></span>
+                </div>
+                <span class="rounded-full bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-700">
+                  <%= official.resolved_count %>
+                </span>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="px-5 py-6 text-center text-sm text-slate-400">Sin reportes resueltos aún.</div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Average resolution time per category -->
+      <div class="rounded-xl border border-slate-200 bg-white">
+        <div class="border-b border-slate-100 px-5 py-4">
+          <h2 class="text-lg font-semibold text-slate-800">Tiempo promedio de resolución</h2>
+          <p class="text-sm text-slate-500">Horas por categoría</p>
+        </div>
+        <div class="divide-y divide-slate-100">
+          <% if @avg_resolution_by_category.any? %>
+            <% @avg_resolution_by_category.each do |row| %>
+              <% avg = row.avg_hours.to_f %>
+              <% sla = row.sla_hours %>
+              <% over_sla = sla.present? && avg > sla.to_f %>
+              <div class="flex items-center justify-between px-5 py-3">
+                <div>
+                  <span class="text-sm font-medium text-slate-700"><%= row.category_name %></span>
+                  <span class="ml-2 text-xs text-slate-400">(<%= row.report_count %> resueltos)</span>
+                </div>
+                <div class="text-right">
+                  <span class="text-sm font-semibold <%= over_sla ? 'text-red-600' : 'text-teal-600' %>">
+                    <%= "%.1f" % avg %>h
+                  </span>
+                  <% if sla.present? %>
+                    <span class="ml-1 text-xs text-slate-400">/ <%= sla %>h SLA</span>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="px-5 py-6 text-center text-sm text-slate-400">Sin reportes resueltos aún.</div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports by category -->
+    <div class="rounded-xl border border-slate-200 bg-white">
+      <div class="border-b border-slate-100 px-5 py-4">
+        <h2 class="text-lg font-semibold text-slate-800">Reportes por categoría</h2>
+      </div>
+      <div class="grid gap-px bg-slate-100 sm:grid-cols-2 lg:grid-cols-3">
+        <% if @reports_by_category.any? %>
+          <% max_count = @reports_by_category.map { |r| r.report_count.to_i }.max %>
+          <% @reports_by_category.each do |row| %>
+            <div class="bg-white p-5">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-slate-700"><%= row.category_name %></span>
+                <span class="text-sm font-bold text-slate-800"><%= row.report_count %></span>
+              </div>
+              <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                <% pct = max_count.to_i > 0 ? (row.report_count.to_f / max_count * 100) : 0 %>
+                <div class="h-full rounded-full bg-teal-500" style="width: <%= pct %>%"></div>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="col-span-full bg-white px-5 py-6 text-center text-sm text-slate-400">Sin reportes aún.</div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Heatmap -->
+    <% if @heatmap_points.present? %>
+      <div class="rounded-xl border border-slate-200 bg-white">
+        <div class="border-b border-slate-100 px-5 py-4">
+          <h2 class="text-lg font-semibold text-slate-800">Mapa de calor</h2>
+          <p class="text-sm text-slate-500">Concentración geográfica de reportes</p>
+        </div>
+        <div id="heatmap" style="height: 400px; width: 100%; border-radius: 0 0 0.75rem 0.75rem;"></div>
+        <script>
+          document.addEventListener("turbo:load", function() {
+            var el = document.getElementById("heatmap");
+            if (!el || typeof L === "undefined" || !L.heatLayer) return;
+            if (el._leaflet_id) return;
+            var points = <%= raw @heatmap_points.map { |lat, lng| [lat.to_f, lng.to_f, 1.0] }.to_json %>;
+            if (points.length === 0) return;
+            var avgLat = points.reduce(function(s, p) { return s + p[0]; }, 0) / points.length;
+            var avgLng = points.reduce(function(s, p) { return s + p[1]; }, 0) / points.length;
+            var map = L.map("heatmap", { scrollWheelZoom: false }).setView([avgLat, avgLng], 13);
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>', maxZoom: 18
+            }).addTo(map);
+            L.heatLayer(points, { radius: 25, blur: 15, maxZoom: 17, max: 1.0, gradient: { 0.4: '#0d9488', 0.65: '#f59e0b', 1: '#ef4444' } }).addTo(map);
+          });
+        </script>
+      </div>
+    <% end %>
+
+    <!-- Recent reports -->
+    <% if @recent_reports.present? %>
+      <div class="rounded-xl border border-slate-200 bg-white">
+        <div class="border-b border-slate-100 px-5 py-4">
+          <h2 class="text-lg font-semibold text-slate-800">Reportes recientes</h2>
+        </div>
+        <div class="divide-y divide-slate-100">
+          <% @recent_reports.each do |report| %>
+            <div class="flex items-center justify-between px-5 py-3">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-slate-700">
+                  <%= link_to report.description.truncate(80), report_path(report), class: "hover:text-teal-600" %>
+                </p>
+                <p class="mt-0.5 text-xs text-slate-400">
+                  <%= report.category&.name %> &middot; <%= report.reporter&.name %> &middot; <%= report.alcaldia&.name %>
+                </p>
+              </div>
+              <span class="ml-4 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium <%= status_badge_class(report.status) %>">
+                <%= t("status.#{report.status}", default: report.status.capitalize) %>
+              </span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+  <% elsif @user&.official? %>
+    <!-- ═══════════════ OFFICIAL DASHBOARD ═══════════════ -->
+
+    <!-- My stats -->
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <p class="text-sm font-medium text-slate-500">Mis reportes totales</p>
+        <p class="mt-1 text-3xl font-bold text-slate-800"><%= @my_total_count %></p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <p class="text-sm font-medium text-slate-500">Asignados a mí</p>
+        <p class="mt-1 text-3xl font-bold text-blue-600"><%= @my_assigned_count %></p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <p class="text-sm font-medium text-slate-500">Pendientes de revisión</p>
+        <p class="mt-1 text-3xl font-bold text-amber-600"><%= @my_pending_count %></p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <p class="text-sm font-medium text-slate-500">Resueltos</p>
+        <p class="mt-1 text-3xl font-bold text-teal-600"><%= @my_resolved_count %></p>
+      </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+      <!-- Team workload -->
+      <div class="rounded-xl border border-slate-200 bg-white">
+        <div class="border-b border-slate-100 px-5 py-4">
+          <h2 class="text-lg font-semibold text-slate-800">Carga del equipo</h2>
+          <p class="text-sm text-slate-500">Reportes asignados por subordinado</p>
+        </div>
+        <div class="divide-y divide-slate-100">
+          <% if @team_workload.present? && @team_workload.any? %>
+            <% @team_workload.each do |member| %>
+              <div class="flex items-center justify-between px-5 py-3">
+                <span class="text-sm font-medium text-slate-700"><%= member.name %></span>
+                <span class="rounded-full px-3 py-1 text-sm font-semibold
+                  <%= member.assigned_count.to_i > 5 ? 'bg-red-50 text-red-700' : 'bg-teal-50 text-teal-700' %>
+                ">
+                  <%= member.assigned_count %> asignados
+                </span>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="px-5 py-6 text-center text-sm text-slate-400">Sin subordinados.</div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Stale reports -->
+      <div class="rounded-xl border border-slate-200 bg-white">
+        <div class="border-b border-slate-100 px-5 py-4">
+          <h2 class="text-lg font-semibold text-slate-800">Reportes estancados</h2>
+          <p class="text-sm text-slate-500">Asignados y fuera de SLA</p>
+        </div>
+        <div class="divide-y divide-slate-100">
+          <% if @stale_reports.present? && @stale_reports.any? %>
+            <% @stale_reports.each do |report| %>
+              <% hours_elapsed = ((Time.current - report.created_at) / 3600.0).round(1) %>
+              <div class="px-5 py-3">
+                <div class="flex items-center justify-between">
+                  <p class="truncate text-sm font-medium text-slate-700">
+                    <%= link_to report.description.truncate(60), report_path(report), class: "hover:text-teal-600" %>
+                  </p>
+                  <span class="ml-3 shrink-0 text-xs font-semibold text-red-600">
+                    <%= hours_elapsed %>h / <%= report.category&.sla_hours %>h
+                  </span>
+                </div>
+                <p class="mt-0.5 text-xs text-slate-400">
+                  <%= report.category&.name %> &middot; Reportado por <%= report.reporter&.name %>
+                </p>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="px-5 py-6 text-center text-sm text-slate-400">Sin reportes estancados. ¡Buen trabajo!</div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="grid gap-4 sm:grid-cols-2">
+      <%= link_to reports_path, class: "block rounded-xl border border-slate-200 bg-white p-5 hover:border-teal-300 hover:shadow-md transition group" do %>
+        <div class="flex items-center gap-3">
+          <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-100 text-teal-600 group-hover:bg-teal-200 text-lg">&equiv;</span>
+          <div>
+            <p class="font-medium text-slate-800">Ver todos los reportes</p>
+            <p class="text-sm text-slate-500">Navegar y gestionar reportes</p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+  <% else %>
+    <!-- ═══════════════ CITIZEN VIEW ═══════════════ -->
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <%= link_to new_report_path, class: "block p-6 rounded-xl bg-white border border-slate-200 hover:border-teal-300 hover:shadow-md transition group" do %>
+        <div class="flex items-center gap-3">
+          <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-teal-100 text-teal-600 group-hover:bg-teal-200 text-xl font-bold">+</span>
+          <div>
+            <p class="font-medium text-slate-800">Crear reporte</p>
+            <p class="text-sm text-slate-500">Reporta un problema en tu comunidad</p>
+          </div>
+        </div>
+      <% end %>
+      <%= link_to reports_path, class: "block p-6 rounded-xl bg-white border border-slate-200 hover:border-teal-300 hover:shadow-md transition group" do %>
+        <div class="flex items-center gap-3">
+          <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-slate-600 group-hover:bg-slate-200 text-xl">&equiv;</span>
+          <div>
+            <p class="font-medium text-slate-800">Mis reportes</p>
+            <p class="text-sm text-slate-500">Revisa el estado de tus reportes</p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,19 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  report: one
+  assigned_at: 2026-03-02 18:23:45
+  assignee: one
+  assignment_note: MyText
+  resolution_note: MyText
+  resolved_at: 2026-03-02 18:23:45
+  reporter_rejection_note: MyText
+
+two:
+  report: two
+  assigned_at: 2026-03-02 18:23:45
+  assignee: two
+  assignment_note: MyText
+  resolution_note: MyText
+  resolved_at: 2026-03-02 18:23:45
+  reporter_rejection_note: MyText

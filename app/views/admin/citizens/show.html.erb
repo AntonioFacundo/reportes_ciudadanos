@@ -1,0 +1,103 @@
+<div class="space-y-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800"><%= @citizen.name %></h1>
+      <p class="mt-1 text-sm text-slate-500">Ciudadano registrado el <%= @citizen.created_at.strftime("%d/%m/%Y %H:%M") %></p>
+    </div>
+    <% if Current.user&.system_admin? %>
+      <div class="flex gap-2">
+        <%= link_to "Editar", edit_admin_citizen_path(@citizen), class: "rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700" %>
+        <% if @citizen.active? %>
+          <%= button_to "Desactivar", deactivate_admin_citizen_path(@citizen), method: :patch, class: "rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50", data: { turbo_confirm: "¿Desactivar a #{@citizen.name}?" } %>
+        <% else %>
+          <%= button_to "Reactivar", reactivate_admin_citizen_path(@citizen), method: :patch, class: "rounded-lg border border-emerald-200 bg-white px-4 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-50", data: { turbo_confirm: "¿Reactivar a #{@citizen.name}?" } %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="p-4 rounded-xl bg-white border border-slate-200">
+      <p class="text-xs font-medium text-slate-500 uppercase">Total reportes</p>
+      <p class="mt-1 text-2xl font-bold text-slate-800"><%= @report_counts[0] %></p>
+    </div>
+    <div class="p-4 rounded-xl bg-white border border-slate-200">
+      <p class="text-xs font-medium text-slate-500 uppercase">Pendientes</p>
+      <p class="mt-1 text-2xl font-bold text-amber-600"><%= @report_counts[1] %></p>
+    </div>
+    <div class="p-4 rounded-xl bg-white border border-slate-200">
+      <p class="text-xs font-medium text-slate-500 uppercase">Resueltos</p>
+      <p class="mt-1 text-2xl font-bold text-emerald-600"><%= @report_counts[2] %></p>
+    </div>
+    <div class="p-4 rounded-xl bg-white border border-slate-200">
+      <p class="text-xs font-medium text-slate-500 uppercase">Estado</p>
+      <p class="mt-1">
+        <% if @citizen.active? %>
+          <span class="rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-800">Activo</span>
+        <% else %>
+          <span class="rounded-full bg-slate-200 px-3 py-1 text-sm font-medium text-slate-600">Inactivo</span>
+        <% end %>
+      </p>
+    </div>
+  </div>
+
+  <div class="rounded-xl bg-white border border-slate-200 p-4 space-y-2">
+    <h2 class="text-lg font-semibold text-slate-800">Información</h2>
+    <dl class="grid gap-3 sm:grid-cols-2">
+      <div>
+        <dt class="text-xs font-medium text-slate-500 uppercase">Nombre</dt>
+        <dd class="mt-0.5 text-slate-800"><%= @citizen.name %></dd>
+      </div>
+      <div>
+        <dt class="text-xs font-medium text-slate-500 uppercase">Correo electrónico</dt>
+        <dd class="mt-0.5 text-slate-800"><%= @citizen.email_address || "No registrado" %></dd>
+      </div>
+    </dl>
+  </div>
+
+  <% if @reports.any? %>
+    <div class="space-y-3">
+      <h2 class="text-lg font-semibold text-slate-800">Últimos reportes</h2>
+      <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">ID</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Descripción</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Categoría</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Alcaldía</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Estado</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Fecha</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            <% @reports.each do |report| %>
+              <tr class="hover:bg-slate-50">
+                <td class="px-4 py-3 text-slate-600 text-sm">
+                  <%= link_to "##{report.id}", report_path(report), class: "text-teal-600 hover:underline" %>
+                </td>
+                <td class="px-4 py-3 text-slate-800 text-sm max-w-xs truncate"><%= truncate(report.description, length: 60) %></td>
+                <td class="px-4 py-3 text-slate-600 text-sm"><%= report.category&.name %></td>
+                <td class="px-4 py-3 text-slate-600 text-sm"><%= report.alcaldia&.name || "—" %></td>
+                <td class="px-4 py-3">
+                  <% display = report_display_status(report) %>
+                  <span class="rounded-full px-2.5 py-0.5 text-xs font-medium <%= status_badge_class(display) %>">
+                    <%= I18n.t("status.#{display}", default: display.humanize) %>
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-slate-500 text-sm"><%= report.created_at.strftime("%d/%m/%Y") %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <%= pagy_nav(@pagy_reports, label: "reportes") if @pagy_reports && @pagy_reports.pages > 1 %>
+  <% else %>
+    <div class="p-8 rounded-xl bg-slate-50 border border-slate-200 text-center">
+      <p class="text-slate-600">Este ciudadano no ha creado reportes.</p>
+    </div>
+  <% end %>
+
+  <%= link_to "← Volver a ciudadanos", admin_citizens_path, class: "text-sm text-slate-600 hover:text-slate-800" %>
+</div>

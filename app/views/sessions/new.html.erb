@@ -1,0 +1,46 @@
+<div class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-white to-teal-50 px-4 py-8">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Reportes Ciudadanos</h1>
+      <p class="mt-2 text-slate-500 text-sm">Ingresa para continuar</p>
+    </div>
+
+    <div class="rounded-2xl bg-white shadow-xl shadow-slate-200/50 border border-slate-100 p-8">
+      <% if alert = flash[:alert] %>
+        <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm flex items-start gap-3">
+          <svg class="w-5 h-5 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+          <span><%= alert %></span>
+        </div>
+      <% end %>
+
+      <% if notice = flash[:notice] %>
+        <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm"><%= notice %></div>
+      <% end %>
+
+      <%= form_with url: session_path, class: "space-y-6" do |form| %>
+        <div>
+          <%= form.label :name, t("sessions.new.name_placeholder"), class: "block text-sm font-medium text-slate-700 mb-2" %>
+          <%= form.text_field :name, required: true, autofocus: true, autocomplete: "username", value: params[:name],
+              class: "block w-full rounded-xl border border-slate-300 px-4 py-3 shadow-sm focus:border-teal-500 focus:ring-teal-500 text-slate-900 placeholder-slate-400",
+              placeholder: t("sessions.new.name_placeholder") %>
+        </div>
+
+        <div>
+          <%= form.label :password, t("sessions.new.password_placeholder"), class: "block text-sm font-medium text-slate-700 mb-2" %>
+          <%= form.password_field :password, required: true, autocomplete: "current-password", maxlength: 72,
+              class: "block w-full rounded-xl border border-slate-300 px-4 py-3 shadow-sm focus:border-teal-500 focus:ring-teal-500 text-slate-900 placeholder-slate-400",
+              placeholder: t("sessions.new.password_placeholder") %>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <%= link_to t("sessions.new.forgot_password"), new_password_path, class: "text-sm text-teal-600 hover:text-teal-700 font-medium" %>
+        </div>
+
+        <%= form.submit t("sessions.new.submit"),
+            class: "w-full py-3 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold shadow-lg shadow-teal-500/25 transition focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 cursor-pointer" %>
+      <% end %>
+    </div>
+
+    <p class="mt-6 text-center text-xs text-slate-400">Sistema de reportes ciudadanos para gobiernos locales</p>
+  </div>
+</div>

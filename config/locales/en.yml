@@ -1,0 +1,64 @@
+# Files in the config/locales directory are used for internationalization and
+# are automatically loaded by Rails. If you want to use locales other than
+# English, add the necessary files in this directory.
+#
+# To use the locales, use `I18n.t`:
+#
+#     I18n.t "hello"
+#
+# In views, this is aliased to just `t`:
+#
+#     <%= t("hello") %>
+#
+# To use a different locale, set it with `I18n.locale`:
+#
+#     I18n.locale = :es
+#
+# This would use the information in config/locales/es.yml.
+#
+# To learn more about the API, please read the Rails Internationalization guide
+# at https://guides.rubyonrails.org/i18n.html.
+#
+# Be aware that YAML interprets the following case-insensitive strings as
+# booleans: `true`, `false`, `on`, `off`, `yes`, `no`. Therefore, these strings
+# must be quoted to be interpreted as strings. For example:
+#
+#     en:
+#       "yes": yup
+#       enabled: "ON"
+
+en:
+  hello: "Hello world"
+  notifications:
+    read:
+      title: "Your report was reviewed"
+      body: "An official reviewed your %{category} report"
+    assigned:
+      title: "New report assigned"
+      body: "A %{category} report was assigned to you"
+    assigned_to_reporter:
+      title: "Your report was assigned"
+      body: "Your %{category} report was assigned to %{assignee}"
+    resolved:
+      title: "Report resolved"
+      body: "Your %{category} report was resolved"
+    rejected:
+      title: "Citizen response"
+      body: "The citizen rejected the resolution"
+    new_report:
+      title: "New report"
+      body: "New report in %{category}"
+  reports:
+    create:
+      outside_boundary: "The reported location is outside the selected municipality's geographic area."
+    new:
+      select_alcaldia_first: "Select a municipality first to see available categories."
+    search:
+      all_statuses: "All statuses"
+    filters:
+      all: "All"
+      pending: "Pending"
+      assigned: "Assigned"
+      resolved: "Resolved"
+      reopened: "Reopened"
+      overdue: "Overdue"

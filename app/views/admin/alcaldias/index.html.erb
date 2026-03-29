@@ -1,0 +1,63 @@
+<div class="space-y-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <h1 class="text-2xl font-bold text-slate-800">Alcaldías</h1>
+    <div class="flex gap-2">
+      <%= link_to "Estados", admin_states_path, class: "rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" %>
+      <%= link_to "Nueva alcaldía", new_admin_alcaldia_path, class: "rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700" %>
+    </div>
+  </div>
+
+  <% if @states && @states.size > 1 %>
+    <div class="flex flex-wrap gap-2">
+      <%= link_to "Todos", admin_alcaldias_path, class: "rounded-full px-3 py-1 text-sm font-medium #{params[:state_id].blank? ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}" %>
+      <% @states.each do |state| %>
+        <%= link_to state.name, admin_alcaldias_path(state_id: state.id), class: "rounded-full px-3 py-1 text-sm font-medium #{params[:state_id].to_s == state.id.to_s ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}" %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <table class="min-w-full divide-y divide-slate-200">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Nombre</th>
+          <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Estado</th>
+          <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Geofencing</th>
+          <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Usuarios</th>
+          <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Reportes</th>
+          <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-slate-600">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200">
+        <% @alcaldias.each do |alcaldia| %>
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-3 font-medium text-slate-800"><%= alcaldia.name %></td>
+            <td class="px-4 py-3 text-slate-600"><%= alcaldia.state&.code %></td>
+            <td class="px-4 py-3">
+              <% if alcaldia.has_boundary? %>
+                <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">Activo</span>
+              <% else %>
+                <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">Sin polígono</span>
+              <% end %>
+            </td>
+            <td class="px-4 py-3 text-slate-600"><%= alcaldia.respond_to?(:users_count_cache) ? alcaldia.users_count_cache : alcaldia.users.count %></td>
+            <td class="px-4 py-3 text-slate-600"><%= alcaldia.respond_to?(:reports_count_cache) ? alcaldia.reports_count_cache : alcaldia.reports.count %></td>
+            <td class="px-4 py-3">
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <%= link_to "Editar", edit_admin_alcaldia_path(alcaldia), class: "inline-block rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50" %>
+                <%= button_to "Eliminar", admin_alcaldia_path(alcaldia), method: :delete, form: { class: "inline-block" }, class: "rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50", data: { turbo_confirm: "¿Eliminar #{alcaldia.name}?" } %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <% if @alcaldias.empty? %>
+      <p class="p-8 text-center text-slate-500">No hay alcaldías.</p>
+    <% end %>
+  </div>
+
+  <%= pagy_nav(@pagy, label: "alcaldías") if @pagy && @pagy.pages > 1 %>
+
+  <%= link_to "← Volver al admin", admin_root_path, class: "text-sm text-slate-600 hover:text-slate-800" %>
+</div>

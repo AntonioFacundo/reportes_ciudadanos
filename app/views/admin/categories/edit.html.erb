@@ -1,0 +1,41 @@
+<div class="max-w-lg">
+  <h1 class="text-2xl font-bold text-slate-800">Editar categoría</h1>
+
+  <%= form_with model: @category, url: admin_category_path(@category), method: :patch, class: "mt-6 space-y-4" do |f| %>
+    <% if @category.errors.any? %>
+      <div class="rounded-lg bg-red-50 p-4 text-sm text-red-800">
+        <%= @category.errors.full_messages.join(", ") %>
+      </div>
+    <% end %>
+
+    <% if Current.user&.system_admin? %>
+      <div>
+        <%= f.label :alcaldia_id, "Alcaldía", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= f.collection_select :alcaldia_id, @alcaldias, :id, :name, { prompt: "Seleccionar alcaldía" }, { required: true, class: "w-full rounded-lg border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
+      </div>
+    <% else %>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Alcaldía</label>
+        <p class="text-slate-600"><%= @category.alcaldia&.name %></p>
+      </div>
+    <% end %>
+
+    <div>
+      <%= f.label :name, "Nombre", class: "block text-sm font-medium text-slate-700 mb-1" %>
+      <%= f.text_field :name, required: true, class: "w-full rounded-lg border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
+    </div>
+
+    <div>
+      <%= f.label :sla_hours, "SLA (horas)", class: "block text-sm font-medium text-slate-700 mb-1" %>
+      <%= f.number_field :sla_hours, min: 1, class: "w-full rounded-lg border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500", placeholder: "72" %>
+      <p class="mt-1 text-xs text-slate-500">Tiempo máximo que tienen tus funcionarios para resolver reportes de esta categoría</p>
+    </div>
+
+    <div class="flex gap-3 pt-2">
+      <%= f.submit "Guardar cambios", class: "rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700" %>
+      <%= link_to "Cancelar", admin_categories_path, class: "rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" %>
+    </div>
+  <% end %>
+
+  <%= link_to "← Volver a categorías", admin_categories_path, class: "mt-6 inline-block text-sm text-slate-600 hover:text-slate-800" %>
+</div>

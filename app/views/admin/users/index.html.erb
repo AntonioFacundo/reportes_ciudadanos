@@ -1,0 +1,101 @@
+<div class="space-y-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <h1 class="text-2xl font-bold text-slate-800">Usuarios del gobierno</h1>
+    <%= link_to "Nuevo usuario", new_admin_user_path, class: "rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700" %>
+  </div>
+
+  <div class="p-4 bg-white rounded-xl border border-slate-200">
+    <%= form_tag admin_users_path, method: :get, class: "flex flex-wrap items-end gap-3", data: (Current.user&.system_admin? ? { alcaldias_by_state: "", selected_alcaldia_id: params[:alcaldia_id] } : {}) do %>
+      <% if Current.user&.system_admin? %>
+        <div class="flex-1 min-w-[180px]">
+          <label class="block text-xs font-medium text-slate-500 mb-1">Estado</label>
+          <select name="state_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="">Todos</option>
+            <% (@states || []).each do |s| %>
+              <option value="<%= s.id %>" <%= "selected" if params[:state_id].to_s == s.id.to_s %>><%= s.name %></option>
+            <% end %>
+          </select>
+        </div>
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-xs font-medium text-slate-500 mb-1">Alcaldía</label>
+          <select name="alcaldia_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="" disabled selected>Selecciona un estado primero</option>
+          </select>
+        </div>
+      <% end %>
+      <div class="min-w-[120px]">
+        <label class="block text-xs font-medium text-slate-500 mb-1">Rol</label>
+        <select name="role" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+          <option value="">Todos</option>
+          <option value="mayor" <%= "selected" if params[:role] == "mayor" %>>Alcalde</option>
+          <option value="official" <%= "selected" if params[:role] == "official" %>>Funcionario</option>
+        </select>
+      </div>
+      <div class="flex-1 min-w-[150px]">
+        <label class="block text-xs font-medium text-slate-500 mb-1">Buscar</label>
+        <input type="text" name="q" value="<%= params[:q] %>" placeholder="Nombre..."
+               class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition">Filtrar</button>
+        <% if params[:state_id].present? || params[:alcaldia_id].present? || params[:role].present? || params[:q].present? %>
+          <%= link_to "Limpiar", admin_users_path, class: "px-4 py-2 bg-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-300 transition" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <table class="min-w-full divide-y divide-slate-200">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Nombre</th>
+          <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Rol</th>
+          <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Alcaldía</th>
+          <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Manager</th>
+          <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">Estado</th>
+          <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-slate-600">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200">
+        <% @users.each do |user| %>
+          <tr class="hover:bg-slate-50 <%= 'opacity-60' unless user.active? %>">
+            <td class="px-4 py-3 text-slate-800"><%= user.name %></td>
+            <td class="px-4 py-3 text-slate-600"><%= role_label(user.role) %></td>
+            <td class="px-4 py-3 text-slate-600"><%= user.alcaldia&.name || "—" %></td>
+            <td class="px-4 py-3 text-slate-600"><%= user.manager&.name || "—" %></td>
+            <td class="px-4 py-3">
+              <% if user.active? %>
+                <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">Activo</span>
+              <% else %>
+                <span class="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-600">Inactivo</span>
+              <% end %>
+            </td>
+            <td class="px-4 py-3">
+              <% if user.active? %>
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                  <%= link_to "Editar", edit_admin_user_path(user), class: "inline-block rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50" %>
+                  <% unless user.id == Current.user.id %>
+                    <%= button_to "Desactivar", deactivate_admin_user_path(user), method: :patch, form: { class: "inline-block" }, class: "rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50", data: { turbo_confirm: "¿Desactivar a #{user.name}?" } %>
+                    <% if Current.user&.system_admin? %>
+                      <%= button_to "Impersonar", impersonate_admin_user_path(user), method: :post, form: { class: "inline-block" }, class: "rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-50", data: { turbo_confirm: "¿Ver como #{user.name}?" } %>
+                    <% end %>
+                  <% end %>
+                </div>
+              <% else %>
+                <span class="text-slate-400 text-sm">—</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <% if @users.empty? %>
+      <p class="p-8 text-center text-slate-500">No hay usuarios del gobierno.</p>
+    <% end %>
+  </div>
+
+  <%= pagy_nav(@pagy, label: "usuarios") if @pagy && @pagy.pages > 1 %>
+
+  <%= link_to "← Volver al admin", admin_root_path, class: "text-sm text-slate-600 hover:text-slate-800" %>
+</div>

@@ -1,0 +1,298 @@
+es:
+  date:
+    formats:
+      short: "%d/%m/%Y %H:%M"
+      long: "%d de %B de %Y a las %H:%M"
+    day_names:
+      - domingo
+      - lunes
+      - martes
+      - miércoles
+      - jueves
+      - viernes
+      - sábado
+    abbr_day_names:
+      - dom
+      - lun
+      - mar
+      - mié
+      - jue
+      - vie
+      - sáb
+    month_names:
+      - ~
+      - enero
+      - febrero
+      - marzo
+      - abril
+      - mayo
+      - junio
+      - julio
+      - agosto
+      - septiembre
+      - octubre
+      - noviembre
+      - diciembre
+    abbr_month_names:
+      - ~
+      - ene
+      - feb
+      - mar
+      - abr
+      - may
+      - jun
+      - jul
+      - ago
+      - sep
+      - oct
+      - nov
+      - dic
+  time:
+    formats:
+      short: "%d %b %H:%M"
+      long: "%d de %B de %Y a las %H:%M"
+  errors:
+    required: "es requerido"
+    inactive: "cuenta desactivada"
+    unauthorized: "No autorizado"
+    not_found: "No encontrado"
+  activerecord:
+    errors:
+      models:
+        report:
+          location_required: "Debes indicar ubicación (coordenadas o descripción)"
+        user:
+          official_requires_manager: "Un funcionario debe tener un superior asignado"
+          government_requires_alcaldia: "Debe pertenecer a una alcaldía"
+  sessions:
+    new:
+      title: "Iniciar sesión"
+      name_placeholder: "Nombre de usuario"
+      password_placeholder: "Contraseña"
+      submit: "Entrar"
+      forgot_password: "¿Olvidaste tu contraseña?"
+    create:
+      failure: "Nombre o contraseña incorrectos."
+    rate_limit: "Demasiados intentos. Intenta más tarde."
+  passwords:
+    rate_limit: "Demasiados intentos. Intenta más tarde."
+    create:
+      success: "Instrucciones de restablecimiento enviadas (si existe un usuario con ese correo)."
+    update:
+      success: "Contraseña restablecida correctamente."
+      mismatch: "Las contraseñas no coinciden."
+    token_invalid: "El enlace de restablecimiento es inválido o ha expirado."
+  reports:
+    created: "Reporte creado correctamente."
+    create:
+      outside_boundary: "La ubicación indicada está fuera del área geográfica de la alcaldía seleccionada."
+    mark_read:
+      success: "Reporte marcado como leído."
+    assign:
+      success: "Reporte asignado correctamente."
+      invalid_assignee: "Asigna a un funcionario válido."
+    resolve:
+      success: "Reporte resuelto correctamente."
+      invalid_state: "Solo se pueden resolver reportes asignados."
+      photo_or_note_required: "Debes adjuntar al menos una foto de la solución o escribir una nota."
+    reject_resolution:
+      success: "Has rechazado la resolución. El reporte vuelve a estar asignado."
+      not_resolved: "Solo puedes rechazar reportes ya resueltos."
+      deadline_passed: "Han pasado más de 72 horas. Ya no puedes dar réplica."
+      justification_required: "Debes justificar por qué no aceptas la resolución."
+    accept_resolution:
+      success: "Has aceptado la resolución. El reporte queda cerrado."
+      not_resolved: "Solo puedes aceptar reportes ya resueltos."
+      already_accepted: "Ya aceptaste esta resolución."
+    new:
+      title: "Nuevo reporte"
+      category: "Categoría"
+      description: "Descripción del problema"
+      location: "Dirección"
+      location_hint: "Ej: Esquina de Juárez y Morelos, frente al parque"
+      location_auto_hint: "Se llena automáticamente al marcar un punto en el mapa."
+      location_map: "Ubicación en el mapa"
+      photos: "Fotos (1-3)"
+      submit: "Enviar reporte"
+      select_alcaldia_first: "Selecciona una alcaldía para ver las categorías disponibles."
+    index:
+      title: "Mis reportes"
+      empty: "Aún no has creado reportes."
+      create_first: "Crear mi primer reporte"
+    search:
+      placeholder: "Buscar por texto..."
+      category: "Categoría"
+      all_categories: "Todas las categorías"
+      all_statuses: "Todos los estados"
+      date_from: "Desde"
+      date_to: "Hasta"
+      submit: "Buscar"
+      clear: "Limpiar"
+    filters:
+      all: "Todos"
+      pending: "Pendientes"
+      assigned: "Asignados"
+      resolved: "Resueltos"
+      rejected: "Rechazados"
+      reopened: "Reabiertos"
+    show:
+      status: "Estado"
+      category: "Categoría"
+      created: "Creado"
+      location: "Ubicación"
+      location_map: "Ubicación en el mapa"
+      description: "Descripción"
+      history: "Historial"
+      timeline:
+        created: "Reporte creado"
+        read: "Marcado como leído"
+        assigned: "Asignado a %{name}"
+        assignment_note_label: "Nota del alcalde"
+        resolved: "Resuelto por %{name}"
+        resolved_attempt: "Respuesta del funcionario (intento %{n})"
+        resolution_note_label: "Respuesta del funcionario"
+        photo_only: "Solo adjuntó fotos (sin mensaje escrito)"
+        no_details: "Sin detalles adicionales"
+        rejected: "Ciudadano reportó que no se resolvió"
+        rejected_attempt: "Réplica %{n} del ciudadano"
+        rejection_note_label: "Justificación"
+        accepted: "Aceptado por el ciudadano"
+        auto_closed: "Cerrado automáticamente (sin respuesta en 72 h)"
+  status:
+    pending: "Pendiente"
+    read: "Leído"
+    assigned: "Asignado"
+    resolved: "Resuelto"
+    reopened: "Reabierto"
+    rejected: "Rechazado"
+    overdue: "Atrasado"
+  notifications:
+    errors:
+      vapid_not_configured: "Falta configurar claves VAPID. Ejecuta: bin/rails vapid:generate"
+    read:
+      title: "Tu reporte fue revisado"
+      body: "Un funcionario revisó tu reporte de %{category}"
+    assigned:
+      title: "Nuevo reporte asignado"
+      body: "Te asignaron un reporte de %{category}"
+    assigned_to_reporter:
+      title: "Tu reporte fue asignado"
+      body: "Tu reporte de %{category} fue asignado a %{assignee}"
+    resolved:
+      title: "Reporte resuelto"
+      body: "Tu reporte de %{category} fue resuelto"
+    rejected:
+      title: "Réplica del ciudadano"
+      body: "El ciudadano rechazó la resolución"
+    new_report:
+      title: "Nuevo reporte"
+      body: "Nuevo reporte en %{category}"
+
+  admin:
+    roles:
+      system_admin: "Administrador"
+      mayor: "Alcalde"
+      official: "Funcionario"
+      citizen: "Ciudadano"
+    alcaldias:
+      created: "Alcaldía creada correctamente."
+      updated: "Alcaldía actualizada correctamente."
+      destroyed: "Alcaldía eliminada."
+      boundary_invalid: "El GeoJSON del polígono es inválido. Verifica el formato."
+      destroy:
+        has_users_or_reports: "No se puede eliminar: tiene usuarios o reportes asociados."
+        failed: "No se pudo eliminar la alcaldía."
+    categories:
+      created: "Categoría creada correctamente."
+      updated: "Categoría actualizada correctamente."
+      destroyed: "Categoría eliminada."
+      destroy:
+        has_reports: "No se puede eliminar una categoría con reportes asociados."
+        failed: "No se pudo eliminar la categoría."
+    citizens:
+      updated: "Ciudadano actualizado."
+      deactivated: "Ciudadano %{name} desactivado."
+      deactivate:
+        failed: "No se pudo desactivar."
+      reactivated: "Ciudadano %{name} reactivado."
+      reactivate:
+        failed: "No se pudo reactivar."
+    users:
+      created: "Usuario creado correctamente."
+      updated: "Usuario actualizado correctamente."
+      deactivated: "Usuario desactivado."
+      deactivate:
+        cannot_self: "No puedes desactivarte a ti mismo."
+        has_subordinates: "No se puede desactivar: tiene subordinados activos. Reasigna o desactiva primero a los subordinados."
+        has_assigned_reports: "No se puede desactivar: tiene reportes asignados. Reasigna los reportes primero."
+        failed: "No se pudo desactivar el usuario."
+      impersonate:
+        cannot_self: "No puedes impersonarte a ti mismo."
+        success: "Ahora estás viendo como %{name}."
+        not_impersonating: "No estás impersonando a nadie."
+        no_session: "No hay sesión activa para impersonar."
+        session_not_found: "Sesión de administrador no encontrada."
+        stopped: "Has dejado de impersonar."
+    reports:
+      force_transition:
+        invalid_status: "Estado inválido."
+        success: "Estado cambiado de %{from} a %{to}."
+        failed: "No se pudo cambiar el estado."
+    states:
+      title: "Estados"
+      new: "Nuevo estado"
+      edit: "Editar estado"
+      created: "Estado creado correctamente."
+      updated: "Estado actualizado correctamente."
+      destroyed: "Estado eliminado correctamente."
+      empty: "No hay estados registrados."
+      back_to_admin: "Volver al admin"
+      back_to_list: "Volver a estados"
+      confirm_delete: "¿Eliminar %{name}? Solo se puede eliminar si no tiene alcaldías."
+      columns:
+        code: "Código"
+        name: "Nombre"
+        alcaldias: "Alcaldías"
+        actions: "Acciones"
+      actions:
+        edit: "Editar"
+        delete: "Eliminar"
+      form:
+        name: "Nombre"
+        code: "Código"
+        code_hint: "Abreviatura del estado (ej: NL, JAL, CDMX)"
+        create: "Crear estado"
+        save: "Guardar cambios"
+        cancel: "Cancelar"
+      destroy:
+        has_alcaldias: "No se puede eliminar un estado que tiene alcaldías."
+        failed: "No se pudo eliminar el estado."
+    snapshots:
+      captured: "Snapshot capturado correctamente."
+      capture_failed: "No se pudo capturar el snapshot."
+
+    audit:
+      actions:
+        force_state_transition: "Forzar transición de estado"
+        update_boundary: "Actualizar polígono"
+        deactivate_user: "Desactivar usuario"
+        create_user: "Crear usuario"
+        update_user: "Actualizar usuario"
+        create_alcaldia: "Crear alcaldía"
+        update_alcaldia: "Actualizar alcaldía"
+        destroy_alcaldia: "Eliminar alcaldía"
+        impersonate_user: "Impersonar usuario"
+        create_state: "Crear estado"
+        update_state: "Actualizar estado"
+        destroy_state: "Eliminar estado"
+
+  inbox:
+    filters:
+      all: "Todos"
+      por_asignar: "Por asignar"
+      asignados: "Asignados"
+      rechazados: "Rechazados"
+      resueltos: "Resueltos"
+      a_mi: "Asignados a mí"
+      a_mi_equipo: "Asignados a mi equipo"
+      rechazados: "Rechazados"

@@ -1,0 +1,33 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  reporter: one
+  category: one
+  alcaldia: one
+  status: assigned
+  assignee: one
+  latitude: 9.99
+  longitude: 9.99
+  location_description: MyText
+  description: MyText
+  resolution_note: MyText
+  reopened: false
+  read_at: 2026-03-02 01:20:28
+  assigned_at: 2026-03-02 01:20:28
+  resolved_at: 2026-03-02 01:20:28
+
+two:
+  reporter: two
+  category: two
+  alcaldia: one
+  status: pending
+  assignee: two
+  latitude: 9.99
+  longitude: 9.99
+  location_description: MyText
+  description: MyText
+  resolution_note: MyText
+  reopened: false
+  read_at: 2026-03-02 01:20:28
+  assigned_at: 2026-03-02 01:20:28
+  resolved_at: 2026-03-02 01:20:28

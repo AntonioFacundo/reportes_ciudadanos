@@ -1,0 +1,94 @@
+<div class="space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-800">Administración</h1>
+    <p class="mt-2 text-slate-600">Gestión de usuarios, categorías y configuración.</p>
+  </div>
+
+  <% if Current.user&.system_admin? && (@states&.size.to_i > 0 || @alcaldias&.size.to_i > 1) %>
+    <div class="p-4 bg-white rounded-xl border border-slate-200">
+      <%= form_tag admin_root_path, method: :get, class: "flex flex-wrap items-end gap-3", data: { alcaldias_by_state: "", selected_alcaldia_id: params[:alcaldia_id], alcaldias_by_state_all_label: "Todas las alcaldías" } do %>
+        <div class="flex-1 min-w-[180px]">
+          <label class="block text-xs font-medium text-slate-500 mb-1">Estado</label>
+          <select name="state_id" id="admin_state_filter" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="">Todos los estados</option>
+            <% (@states || []).each do |s| %>
+              <option value="<%= s.id %>" <%= "selected" if params[:state_id].to_s == s.id.to_s %>><%= s.name %></option>
+            <% end %>
+          </select>
+        </div>
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-xs font-medium text-slate-500 mb-1">Alcaldía</label>
+          <select name="alcaldia_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="" disabled selected>Selecciona un estado primero</option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <button type="submit" class="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition">Filtrar</button>
+          <% if params[:state_id].present? || params[:alcaldia_id].present? %>
+            <%= link_to "Limpiar", admin_root_path, class: "px-4 py-2 bg-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-300 transition" %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <% if Current.user&.system_admin? %>
+      <%= link_to admin_states_path, class: "block p-6 rounded-xl bg-white border border-slate-200 hover:border-teal-300 hover:shadow-md transition" do %>
+        <span class="text-3xl">🗺️</span>
+        <h2 class="mt-2 font-semibold text-slate-800">Estados</h2>
+        <p class="mt-1 text-sm text-slate-500"><%= @states_count %> estados</p>
+      <% end %>
+
+      <%= link_to admin_alcaldias_path(state_id: params[:state_id]), class: "block p-6 rounded-xl bg-white border border-slate-200 hover:border-teal-300 hover:shadow-md transition" do %>
+        <span class="text-3xl">🏛️</span>
+        <h2 class="mt-2 font-semibold text-slate-800">Alcaldías</h2>
+        <p class="mt-1 text-sm text-slate-500"><%= @alcaldias_count %> alcaldías</p>
+      <% end %>
+    <% end %>
+
+    <%= link_to admin_categories_path, class: "block p-6 rounded-xl bg-white border border-slate-200 hover:border-teal-300 hover:shadow-md transition" do %>
+      <span class="text-3xl">📋</span>
+      <h2 class="mt-2 font-semibold text-slate-800">Categorías</h2>
+      <p class="mt-1 text-sm text-slate-500"><%= @categories_count %> categorías</p>
+    <% end %>
+
+    <%= link_to admin_users_path(state_id: params[:state_id], alcaldia_id: params[:alcaldia_id]), class: "block p-6 rounded-xl bg-white border border-slate-200 hover:border-teal-300 hover:shadow-md transition" do %>
+      <span class="text-3xl">👥</span>
+      <h2 class="mt-2 font-semibold text-slate-800">Usuarios gobierno</h2>
+      <p class="mt-1 text-sm text-slate-500"><%= @users_count %> del gobierno</p>
+    <% end %>
+
+    <%= link_to admin_citizens_path, class: "block p-6 rounded-xl bg-white border border-slate-200 hover:border-teal-300 hover:shadow-md transition" do %>
+      <span class="text-3xl">🧑‍🤝‍🧑</span>
+      <h2 class="mt-2 font-semibold text-slate-800">Ciudadanos</h2>
+      <p class="mt-1 text-sm text-slate-500"><%= @citizens_count %> registrados</p>
+    <% end %>
+
+    <%= link_to inbox_path(filter: "por_asignar", state_id: params[:state_id], alcaldia_id: params[:alcaldia_id]), class: "block p-6 rounded-xl bg-white border border-slate-200 hover:border-teal-300 hover:shadow-md transition" do %>
+      <span class="text-3xl">⏳</span>
+      <h2 class="mt-2 font-semibold text-slate-800">Pendientes</h2>
+      <p class="mt-1 text-sm text-slate-500"><%= @reports_pending %> reportes por asignar</p>
+    <% end %>
+
+    <%= link_to admin_snapshots_path(state_id: params[:state_id], alcaldia_id: params[:alcaldia_id]), class: "block p-6 rounded-xl bg-white border border-slate-200 hover:border-teal-300 hover:shadow-md transition" do %>
+      <span class="text-3xl">📊</span>
+      <h2 class="mt-2 font-semibold text-slate-800">Historial</h2>
+      <p class="mt-1 text-sm text-slate-500">Snapshots y evolución</p>
+    <% end %>
+
+    <%= link_to admin_analytics_path(state_id: params[:state_id], alcaldia_id: params[:alcaldia_id]), class: "block p-6 rounded-xl bg-white border border-slate-200 hover:border-teal-300 hover:shadow-md transition" do %>
+      <span class="text-3xl">📈</span>
+      <h2 class="mt-2 font-semibold text-slate-800">Analíticas</h2>
+      <p class="mt-1 text-sm text-slate-500">Métricas y rendimiento</p>
+    <% end %>
+
+    <% if Current.user&.system_admin? %>
+      <%= link_to admin_audit_logs_path, class: "block p-6 rounded-xl bg-white border border-slate-200 hover:border-teal-300 hover:shadow-md transition" do %>
+        <span class="text-3xl">📜</span>
+        <h2 class="mt-2 font-semibold text-slate-800">Auditoría</h2>
+        <p class="mt-1 text-sm text-slate-500">Registro de acciones del sistema</p>
+      <% end %>
+    <% end %>
+  </div>
+</div>

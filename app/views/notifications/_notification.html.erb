@@ -1,0 +1,13 @@
+<%= link_to mark_read_notification_path(notification),
+    data: { turbo_method: :patch },
+    class: "block p-4 rounded-lg border border-slate-200 #{notification.read? ? 'bg-slate-50' : 'bg-teal-50/50 border-teal-200'} hover:bg-slate-100 transition" do %>
+  <div class="flex justify-between gap-2">
+    <div class="min-w-0 flex-1">
+      <p class="font-medium text-slate-800 truncate"><%= notification.title %></p>
+      <% if notification.body.present? %>
+        <p class="text-sm text-slate-600 mt-0.5 line-clamp-2"><%= notification.body %></p>
+      <% end %>
+    </div>
+    <span class="text-xs text-slate-400 whitespace-nowrap"><%= time_ago_in_words(notification.created_at) %></span>
+  </div>
+<% end %>

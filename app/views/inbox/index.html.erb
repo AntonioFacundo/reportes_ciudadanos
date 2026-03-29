@@ -1,0 +1,112 @@
+<%= turbo_stream_from :inbox %>
+<div>
+  <h1 class="text-2xl font-bold text-slate-800">Bandeja de entrada</h1>
+  <p class="mt-2 text-slate-600">Reportes pendientes y asignados. Conectado como <%= Current.user&.name %> (<%= Current.user&.role %>).</p>
+
+  <% is_mayor = Current.user&.mayor? || Current.user&.system_admin? %>
+  <% current_filter = params[:filter].presence || "all" %>
+  <div class="mt-4 flex flex-wrap gap-2">
+    <% if is_mayor %>
+      <%= link_to t("inbox.filters.all"), inbox_path, class: "px-3 py-1.5 rounded-lg text-sm font-medium #{current_filter == 'all' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}" %>
+      <%= link_to t("inbox.filters.por_asignar"), inbox_path(filter: "por_asignar"), class: "px-3 py-1.5 rounded-lg text-sm font-medium #{current_filter == 'por_asignar' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}" %>
+      <%= link_to t("inbox.filters.asignados"), inbox_path(filter: "asignados"), class: "px-3 py-1.5 rounded-lg text-sm font-medium #{current_filter == 'asignados' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}" %>
+      <%= link_to t("inbox.filters.rechazados"), inbox_path(filter: "rechazados"), class: "px-3 py-1.5 rounded-lg text-sm font-medium #{current_filter == 'rechazados' ? 'bg-red-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}" %>
+      <%= link_to t("inbox.filters.resueltos"), inbox_path(filter: "resueltos"), class: "px-3 py-1.5 rounded-lg text-sm font-medium #{current_filter == 'resueltos' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}" %>
+    <% else %>
+      <%= link_to t("inbox.filters.all"), inbox_path, class: "px-3 py-1.5 rounded-lg text-sm font-medium #{current_filter == 'all' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}" %>
+      <%= link_to t("inbox.filters.a_mi"), inbox_path(filter: "a_mi"), class: "px-3 py-1.5 rounded-lg text-sm font-medium #{current_filter == 'a_mi' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}" %>
+      <%= link_to t("inbox.filters.a_mi_equipo"), inbox_path(filter: "a_mi_equipo"), class: "px-3 py-1.5 rounded-lg text-sm font-medium #{current_filter == 'a_mi_equipo' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}" %>
+      <%= link_to t("inbox.filters.rechazados"), inbox_path(filter: "rechazados"), class: "px-3 py-1.5 rounded-lg text-sm font-medium #{current_filter == 'rechazados' ? 'bg-red-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}" %>
+    <% end %>
+  </div>
+
+  <!-- Search filters -->
+  <div class="mt-4 p-4 bg-white rounded-xl border border-slate-200">
+    <%= form_tag inbox_path, method: :get, class: "space-y-3" do %>
+      <%= hidden_field_tag :filter, params[:filter] if params[:filter].present? %>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div>
+          <input type="text" name="q" value="<%= params[:q] %>" placeholder="<%= t('reports.search.placeholder') %>"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
+        </div>
+        <div>
+          <select name="category_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+            <option value=""><%= t("reports.search.all_categories") %></option>
+            <% @categories.each do |cat| %>
+              <option value="<%= cat.id %>" <%= "selected" if params[:category_id].to_s == cat.id.to_s %>><%= cat.name %></option>
+            <% end %>
+          </select>
+        </div>
+        <div>
+          <select name="status" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+            <option value=""><%= t("reports.search.all_statuses") %></option>
+            <% Report::STATUSES.each do |s| %>
+              <option value="<%= s %>" <%= "selected" if params[:status] == s %>><%= t("status.#{s}") %></option>
+            <% end %>
+            <option value="rejected" <%= "selected" if params[:status] == "rejected" %>><%= t("status.rejected") %></option>
+            <option value="reopened" <%= "selected" if params[:status] == "reopened" %>><%= t("status.reopened") %></option>
+          </select>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <input type="date" name="date_from" value="<%= params[:date_from] %>"
+                 class="date-compact border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                 title="<%= t('reports.search.date_from') %>" />
+          <span class="text-slate-400 text-xs">–</span>
+          <input type="date" name="date_to" value="<%= params[:date_to] %>"
+                 class="date-compact border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                 title="<%= t('reports.search.date_to') %>" />
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition">
+          <%= t("reports.search.submit") %>
+        </button>
+        <% if params[:q].present? || params[:category_id].present? || params[:status].present? || params[:date_from].present? || params[:date_to].present? %>
+          <%= link_to t("reports.search.clear"), inbox_path(filter: params[:filter].presence), class: "px-4 py-2 bg-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-300 transition" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <% if Current.user&.mayor? || Current.user&.system_admin? %>
+    <div class="mt-3 flex gap-2">
+      <%= link_to "Exportar PDF", admin_export_reportes_pdf_path(q: params[:q], category_id: params[:category_id], status: params[:status], date_from: params[:date_from], date_to: params[:date_to]), class: "inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white no-underline", style: "background-color: #334155;", data: { turbo: false } %>
+      <%= link_to "Exportar Excel", admin_export_reportes_xlsx_path(q: params[:q], category_id: params[:category_id], status: params[:status], date_from: params[:date_from], date_to: params[:date_to]), class: "inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white no-underline", style: "background-color: #047857;", data: { turbo: false } %>
+    </div>
+  <% end %>
+
+  <% reports = @reports || [] %>
+  <% if reports.any? %>
+    <div class="mt-6 space-y-4">
+      <% reports.each do |report| %>
+        <%= link_to report_path(report), class: "block p-4 rounded-xl bg-white border border-slate-200 hover:border-teal-300 hover:shadow-md transition", data: { turbo_prefetch: false } do %>
+          <div class="flex justify-between items-start">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-slate-800 truncate"><%= report.description.truncate(60) %></p>
+              <p class="text-sm text-slate-500 mt-1">
+                <%= report.category&.name %> · <%= l(report.created_at, format: :short) %>
+                <% if report.assignee.present? %>
+                  · Asignado a <%= report.assignee.name %>
+                <% end %>
+              </p>
+              <% if report.reporter_rejection_note.present? %>
+                <p class="text-xs text-red-600 mt-1 truncate">"<%= report.reporter_rejection_note.truncate(80) %>"</p>
+              <% end %>
+            </div>
+            <span class="ml-3 flex items-center gap-1">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-medium <%= status_badge_class(report_display_status(report)) %>">
+                <%= t("status.#{report_display_status(report)}", default: report_display_status(report)) %>
+              </span>
+              <%= sla_badge(report) %>
+            </span>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+    <%= pagy_nav(@pagy, label: "reportes") if @pagy && @pagy.pages > 1 %>
+  <% else %>
+    <div class="mt-8 p-8 rounded-xl bg-slate-50 border border-slate-200 text-center">
+      <p class="text-slate-600">No hay reportes en tu bandeja.</p>
+    </div>
+  <% end %>
+</div>

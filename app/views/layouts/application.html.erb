@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html class="h-full">
+  <head>
+    <title><%= content_for(:title) || "Reportes Ciudadanos" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Reportes Ciudadanos">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= action_cable_meta_tag %>
+    <meta name="turbo-cache-control" content="no-cache">
+
+    <%= yield :head %>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css" />
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+    <style>
+      .ts-wrapper .ts-control {
+        border: 1px solid #cbd5e1;
+        border-radius: 0.5rem;
+        padding: 0.45rem 0.75rem;
+        font-size: 1rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      }
+      .ts-wrapper .ts-control input {
+        font-size: 1rem !important;
+      }
+      .ts-wrapper .ts-control:focus-within {
+        border-color: #14b8a6;
+        box-shadow: 0 0 0 2px rgba(20,184,166,0.25);
+      }
+      .ts-wrapper .ts-dropdown {
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+      .ts-wrapper .ts-dropdown .option.active {
+        background: #f0fdfa;
+        color: #0d9488;
+      }
+      .citizen-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        align-items: center;
+        justify-items: center;
+        padding: 0.45rem 0;
+        padding-bottom: max(0.6rem, env(safe-area-inset-bottom));
+        background: #fff;
+        border-top: 1px solid #e2e8f0;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+      }
+      .citizen-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.2rem;
+        padding: 0.2rem 0.6rem;
+        color: #64748b;
+        text-decoration: none;
+        font-size: 0.7rem;
+        font-weight: 500;
+        transition: color 0.2s;
+      }
+      .citizen-nav-item:hover { color: #0d9488; }
+      .citizen-nav-item.active { color: #0d9488; }
+      .citizen-nav-icon { font-size: 1.35rem; line-height: 1; }
+      .citizen-nav-item-plus .citizen-nav-icon-plus {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        background: #0d9488;
+        border-radius: 50%;
+        font-size: 1.5rem;
+        font-weight: 300;
+        color: #fff;
+        line-height: 1;
+      }
+      .citizen-nav-item-plus:hover .citizen-nav-icon-plus { background: #0f766e; }
+      .citizen-main { padding-bottom: 4.5rem; }
+      /* Fechas compactas */
+      input[type="date"].date-compact {
+        width: 7.5rem;
+        min-width: 0;
+        padding: 0.375rem 0.5rem;
+        font-size: 0.8125rem;
+      }
+    </style>
+  </head>
+
+  <body class="min-h-full bg-slate-100" data-authenticated="<%= authenticated? %>">
+    <% if impersonating? %>
+      <div class="bg-amber-400 text-amber-900 text-center py-2 px-4 text-sm font-medium flex items-center justify-center gap-3">
+        <span>Estás viendo como <strong><%= Current.user&.name %></strong></span>
+        <%= button_to "Dejar de impersonar", admin_stop_impersonating_path, method: :delete, class: "inline-flex items-center px-3 py-1 rounded-md bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition" %>
+      </div>
+    <% end %>
+    <% if authenticated? %>
+      <% if Current.user&.citizen? %>
+        <nav class="bg-white border-b border-slate-200 shadow-sm">
+          <div class="mx-auto max-w-4xl px-4 sm:px-6">
+            <div class="flex justify-between h-14 items-center">
+              <span class="text-lg font-bold text-teal-700">Reportes Ciudadanos</span>
+              <%= button_to "Salir", session_path, method: :delete, class: "px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 text-sm" %>
+            </div>
+          </div>
+        </nav>
+      <% else %>
+        <nav class="bg-white border-b border-slate-200 shadow-sm" id="gov-nav">
+          <div class="mx-auto max-w-4xl px-4 sm:px-6">
+            <div class="flex justify-between h-14 items-center">
+              <%= link_to root_path, class: "flex items-center shrink-0" do %>
+                <span class="text-lg font-bold text-teal-700">Reportes Ciudadanos</span>
+              <% end %>
+              <!-- Desktop nav -->
+              <div class="hidden sm:flex items-center gap-2">
+                <%= link_to "Inicio", root_path, class: "px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium" %>
+                <%= link_to "Mis reportes", reports_path, class: "px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium" %>
+                <%= link_to "Crear", new_report_path, class: "px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium" %>
+                <%= link_to "Bandeja", inbox_path, class: "px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium" %>
+                <% if Current.user&.system_admin? || Current.user&.mayor? %>
+                  <%= link_to "Admin", admin_root_path, class: "px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium" %>
+                <% end %>
+                <%= button_to "Salir", session_path, method: :delete, class: "px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 text-sm" %>
+              </div>
+              <!-- Mobile hamburger -->
+              <button type="button" onclick="document.getElementById('gov-mobile-menu').classList.toggle('hidden')" class="sm:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+              </button>
+            </div>
+            <!-- Mobile menu -->
+            <div id="gov-mobile-menu" class="hidden sm:hidden pb-3 space-y-1">
+              <%= link_to "Inicio", root_path, class: "block px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 text-sm font-medium" %>
+              <%= link_to "Mis reportes", reports_path, class: "block px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 text-sm font-medium" %>
+              <%= link_to "Crear reporte", new_report_path, class: "block px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 text-sm font-medium" %>
+              <%= link_to "Bandeja", inbox_path, class: "block px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 text-sm font-medium" %>
+              <% if Current.user&.system_admin? || Current.user&.mayor? %>
+                <%= link_to "Admin", admin_root_path, class: "block px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 text-sm font-medium" %>
+              <% end %>
+              <%= button_to "Salir", session_path, method: :delete, class: "block w-full text-left px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 text-sm font-medium" %>
+            </div>
+          </div>
+        </nav>
+      <% end %>
+
+      <% if Current.user&.citizen? %>
+        <nav class="citizen-bottom-nav">
+          <%= link_to root_path, class: "citizen-nav-item #{request.path == '/' ? 'active' : ''}" do %>
+            <span class="citizen-nav-icon">🏠</span>
+            <span class="citizen-nav-label">Inicio</span>
+          <% end %>
+          <%= link_to new_report_path, class: "citizen-nav-item citizen-nav-item-plus" do %>
+            <span class="citizen-nav-icon-plus">+</span>
+            <span class="citizen-nav-label">Crear</span>
+          <% end %>
+          <%= link_to reports_path, class: "citizen-nav-item #{request.path.start_with?('/reports') && request.path != '/reports/new' ? 'active' : ''}" do %>
+            <span class="citizen-nav-icon">📋</span>
+            <span class="citizen-nav-label">Mis reportes</span>
+          <% end %>
+        </nav>
+      <% end %>
+    <% end %>
+
+    <main class="mx-auto max-w-4xl px-4 sm:px-6 py-8 <%= 'citizen-main' if authenticated? && Current.user&.citizen? %>">
+      <% if notice %>
+        <div class="mb-4 p-4 rounded-lg bg-emerald-50 text-emerald-800 text-sm"><%= notice %></div>
+      <% end %>
+      <%= yield %>
+    </main>
+  </body>
+</html>
