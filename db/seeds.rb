@@ -2,7 +2,8 @@
 # development, test). The code here should be idempotent so that it can be executed at any point in every environment.
 # The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
 
-alcaldia_default = Alcaldia.find_or_create_by!(name: "Sabinas Hidalgo")
+state_default = State.find_or_create_by!(name: "Nuevo León")
+alcaldia_default = Alcaldia.find_or_create_by!(name: "Sabinas Hidalgo", state: state_default)
 
 sabinas_boundary = '{"type":"Polygon","coordinates":[[[-100.22,26.56],[-100.22,26.44],[-100.12,26.44],[-100.12,26.56],[-100.22,26.56]]]}'
 unless alcaldia_default.has_boundary?
