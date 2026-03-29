@@ -58,6 +58,8 @@ es:
     not_found: "No encontrado"
   activerecord:
     errors:
+      messages:
+        record_invalid: "La validación falló: %{errors}"
       models:
         report:
           location_required: "Debes indicar ubicación (coordenadas o descripción)"
