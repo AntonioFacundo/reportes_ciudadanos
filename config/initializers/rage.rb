@@ -18,6 +18,8 @@ Rails.application.config.after_initialize do
   RageArch.register(:state_repo, Admin::StateRepo.new)
   RageArch.register(:notification_repo, Notifications::NotificationRepo.new)
   RageArch.register(:subscription_repo, Push::SubscriptionRepo.new)
+  RageArch.register(:conversation_repo, Whatsapp::ConversationRepo.new)
+  RageArch.register(:whatsapp_citizen_repo, Whatsapp::CitizenRepo.new)
 
   publisher = RageArch::EventPublisher.new
   RageArch::UseCase::Base.wire_subscriptions_to(publisher)

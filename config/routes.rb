@@ -70,6 +70,11 @@ Rails.application.routes.draw do
     get :vapid_public_key, on: :member, path: "vapid_public_key"
   end
 
+  namespace :api do
+    get  "whatsapp/verify",  to: "whatsapp#verify"
+    post "whatsapp/receive",  to: "whatsapp#receive"
+  end
+
   get "up" => "rails/health#show", as: :rails_health_check
 
   if Rails.env.development?

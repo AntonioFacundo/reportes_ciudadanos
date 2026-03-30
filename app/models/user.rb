@@ -13,6 +13,7 @@ class User < ApplicationRecord
 
   normalizes :email_address, with: ->(e) { e.present? ? e.strip.downcase : nil }
   normalizes :name, with: ->(n) { n.present? ? n.strip : nil }
+  normalizes :whatsapp_phone, with: ->(p) { p.present? ? p.strip.gsub(/\D/, "") : nil }
 
   validates :name, presence: true, uniqueness: { case_sensitive: false }
   validates :role, inclusion: { in: ROLES }
